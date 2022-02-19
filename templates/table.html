@@ -2,73 +2,108 @@
 {% block table %}
 
 
-<table
-    class="table"
-    x-data="{rowidx: 0, colidx: 0}"
-
-    {% macro update_rowid(delta) %}
-    rowidx = Math.max(Math.min(rowidx + {{ delta }}, {{ rows|length - 1 }}), 0)
-    {% endmacro %}
-
-    {% macro update_colid(delta) %}
-    colidx = Math.max(Math.min(colidx + {{ delta }}, {{ columns|length - 1 }}), 0)
-    {% endmacro %}
-
-    @keydown.shift.down.window="{{ update_rowid(1) }}"
-    @keydown.j.window="{{ update_rowid(1) }}"
-
-    @keydown.shift.up.window="{{ update_rowid(-1) }}"
-    @keydown.k.window="{{ update_rowid(-1) }}"
-
-    @keydown.shift.right.window="{{ update_colid(1) }}"
-    @keydown.l.window="{{ update_colid(1) }}"
-
-    @keydown.shift.left.window="{{ update_colid(-1) }}"
-    @keydown.h.window="{{ update_colid(-1) }}"
-
-    @keydown.shift.g.window="rowidx = {{ rows|length - 1}}"
-    @keydown.g.window="if (!$event.shiftKey) rowidx = 0 "
-
-    @keydown.shift.f.window="window.location.href = '{{ format_url(request.url) }}op=f:' + colidx"
-    >
+<table class="table" x-data="sheet" x-bind="sheetkeys('{{ format_url(request.url) }}')">
     <tr>
       {% for col in columns %}
-      <th
-          x-bind:class="colidx == {{ loop.index0 }} ? 'active' : ''"
-          >{{ col }}</th>
+      <th>{{ col }}</th>
       {% endfor %}
     </tr>
   {% for row in rows %}
   {% set outerloop = loop %}
-  <tr 
-          x-bind:class="rowidx == {{ loop.index0 }} ? 'active' : ''"
-          x-effect="
-            if (rowidx == {{ loop.index0 }}){
-              $el.scrollIntoView({
-                block: rowidx == 0 ? 'end' : 'nearest',
-                inline: 'nearest'
-              })
-            }
-            "
-          >
-          {% for col in columns %}
-          <td
-              x-bind:style="colidx == {{ loop.index0 }} ? (rowidx == {{ outerloop.index0 }} ? 'background:#d5e1d9' : 'background:#eef0f3') : ''"
-              >
-              {{ row[col] }}
-          </td>
-            {% endfor %}
+  <tr x-bind="row({{ loop.index0 }})">
+    {% for col in columns %}
+    <td x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})">
+      {{ row[col] }}
+    </td>
+    {% endfor %}
   </tr>
     {% endfor %}
 </table>
 
 <script>
-  /*
-  Alpine.data('sheet', () => ({
-      rowidx: 0,
-      colidx: 0
-    })
-  )
- */
+  document.addEventListener('alpine:init', () => {
+      Alpine.data('sheet', () => ({
+          rowidx: 0,
+          colidx: 0,
+
+          update_rowid(delta) {
+              console.log(this.rowidx);
+              this.rowidx = Math.max(Math.min(this.rowidx + delta, {{ rows|length - 1 }}), 0)
+            },
+          update_colid(delta) {
+              this.colidx = Math.max(Math.min(this.colidx + delta, {{ columns|length - 1 }}), 0)
+            }
+
+        }));
+
+      Alpine.bind('sheetkeys', (url) => ({
+          '@keydown.j.window'() {
+              this.update_rowid(1);
+            },
+          '@keydown.shift.down.window'() {
+              this.update_rowid(1);
+            },
+          '@keydown.shift.up.window'() {
+              this.update_rowid(-1);
+            },
+          '@keydown.k.window'() {
+              this.update_rowid(-1);
+            },
+
+          '@keydown.shift.right.window'() {
+              this.update_colid(1);
+            },
+          '@keydown.l.window'() {
+              this.update_colid(1);
+            },
+          '@keydown.shift.left.window'() {
+              this.update_colid(-1);
+            },
+          '@keydown.h.window'() {
+              this.update_colid(-1);
+            },
+
+          '@keydown.shift.g.window'() {
+              this.rowidx = {{ rows|length - 1}};
+            },
+          '@keydown.g.window'() {
+              if (!this.$event.shiftKey) this.rowidx = 0
+            },
+
+          '@keydown.shift.f.window'() {
+              window.location.href = `${url}op=f:` + this.colidx
+            }
+
+        }));
+
+      Alpine.bind('row', (idx) => ({
+          ':class'() {
+              return this.rowidx == idx ? 'active' : ''
+            },
+
+          'x-effect'() {
+              if (this.rowidx == idx) {
+                  this.$el.scrollIntoView({
+                      block: this.rowidx == 0 ? 'end': 'nearest',
+                      inline: 'nearest'
+                    })
+                }
+            }
+
+        }));
+
+      Alpine.bind('cell', (i, j) => ({
+          ':style'() {
+              if (this.rowidx == i && this.colidx == j) {
+                  return { background : '#d5e1d9' }
+              } else if (this.colidx == j) {
+                  return { background : '#eef0f3' }
+              } else {
+                  return {}
+              }
+            }
+        }));
+
+    });
 </script>
 {% endblock %}

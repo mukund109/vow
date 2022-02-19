@@ -46,7 +46,6 @@ def _run_ops(df, operations):
     if not operations:
         return df
     op = operations[0]
-    print(op)
     result = None
 
     if op == "col_info":
