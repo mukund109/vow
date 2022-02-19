@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-exp.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,200;0,300;0,500;1,700&display=swap" rel="stylesheet"> 
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <style>
+      body {
+        color: #000;
+        font-family: 'Roboto Mono', monospace;
+        width:1000px;
+        margin:20px auto;
+        height:100%
+      }
+      div {
+      }
+
+      .htmx-indicator{
+        display:none;
+      }
+      .htmx-request {
+        display:inline;
+      }
+    </style>
+  </head>
+  <body>
+  <h4>{{ msg }}</h4>
+  <div x-data="{ open: false }">
+      <button
+        @click="open = true">
+        Expand
+      </button>
+   
+      <span
+        x-show="open">
+        Content...
+      </span>
+  </div>
+  <div class="container" x-data="{ is_focused: false }">
+    <div class="columns">
+      <input
+          class="form-input column col-3"
+          type="search"
+          name="q"
+          hx-get="/search"
+          hx-trigger="keyup[target.value.length > 0] delay:100ms changed, search"
+          hx-target="#results"
+          hx-indicator=".htmx-indicator"
+          placeholder="Search..."
+          autocomplete="off"
+          x-on:focusin="is_focused = true"
+          x-on:focusout="is_focused = false"/>
+
+      <span class="htmx-indicator loading column col-1"></span>
+    </div>
+    <div class="columns">
+      <ul
+          x-show="is_focused"
+          class="menu menu-nav column col-3"
+          id="results">
+      </ul>
+    </div>
+  </div>
+  {% block table %}
+  {% endblock %}
+  </body>
+</html>
