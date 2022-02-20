@@ -2,7 +2,7 @@
 {% block table %}
 
 
-<table class="table" x-data="sheet" x-bind="sheetkeys('{{ format_url(request.url) }}')">
+<table class="table table-scroll" x-data="sheet" x-bind="sheetkeys('{{ format_url(request.url) }}')">
     <tr>
       {% for col in columns %}
       <th>{{ col }}</th>
@@ -79,15 +79,6 @@
       Alpine.bind('row', (idx) => ({
           ':class'() {
               return this.rowidx == idx ? 'active' : ''
-            },
-
-          'x-effect'() {
-              if (this.rowidx == idx) {
-                  this.$el.scrollIntoView({
-                      block: this.rowidx == 0 ? 'end': 'nearest',
-                      inline: 'nearest'
-                    })
-                }
             }
 
         }));
@@ -101,6 +92,15 @@
               } else {
                   return {}
               }
+            },
+
+          'x-effect'() {
+              if (this.rowidx == i && this.colidx == j) {
+                  this.$el.scrollIntoView({
+                      block: this.rowidx == 0 ? 'end': 'nearest',
+                      inline: 'nearest'
+                    })
+                }
             }
         }));
 
