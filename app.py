@@ -3,7 +3,12 @@ from flask import request
 import time
 import random
 import pandas as pd
-import urllib.parse
+import duckdb
+from typing import Dict, List, Union
+from pypika import Table, Query
+from pypika.enums import Order
+from pypika.queries import QueryBuilder, Selectable
+from pypika.functions import Count
 
 # create a flask application
 app = flask.Flask(__name__)
@@ -14,8 +19,18 @@ app.template_folder = "templates"
 df = pd.read_csv("new-voter-registrations.csv")
 
 
-def _df_to_dict(sheet):
-    return {"columns": sheet.columns, "rows": sheet.to_dict(orient="records")}
+def _get_conn():
+    # TODO: closing the connection?
+    return duckdb.connect("vow.db", read_only=True)
+
+
+def _table_to_template_kwargs(
+    view: QueryBuilder, conn: duckdb.DuckDBPyConnection
+) -> Dict[str, Union[list, List[tuple]]]:
+    conn.execute(view.limit(20).get_sql())
+    rows = conn.fetchall()
+    columns = [col[0] for col in conn.description]
+    return {"columns": columns, "rows": rows}
 
 
 def _get_formatted_url(url):
@@ -29,20 +44,25 @@ def _get_formatted_url(url):
 # create a route for the application
 @app.route("/")
 def index():
-    global df
+    # global df
     operations = request.args.getlist("op", type=str)
-    sheet = _run_ops(df, operations)
-    table_info = _df_to_dict(sheet)
+    view = _initialize_view("gta")
+    view = _run_ops(view, operations)
+    # table_info = _df_to_dict(sheet)
     return flask.render_template(
         "table.html",
         msg="how are you feeling?",
         format_url=_get_formatted_url,
-        **table_info
+        **_table_to_template_kwargs(view, _get_conn()),
     )
 
 
+def _df_to_dict(sheet):
+    return {"columns": sheet.columns, "rows": sheet.to_dict(orient="records")}
+
+
 # uri ---encodes--> original table x op x op
-def _run_ops(df, operations):
+def _run_ops_df(df, operations):
     if not operations:
         return df
     op = operations[0]
@@ -51,8 +71,7 @@ def _run_ops(df, operations):
     if op == "col_info":
         result = df.describe()
     elif op.startswith("f:"):
-        col_idx = int(op.split(":")[1])
-        col_name = df.columns[col_idx]
+        col_name = op.split(":")[1]
         result = df[col_name].value_counts()
     else:
         raise ValueError("Unsupported operation")
@@ -61,6 +80,43 @@ def _run_ops(df, operations):
         result = result.reset_index()
 
     return _run_ops(result, operations[1:])
+
+
+def _initialize_view(table: str) -> QueryBuilder:
+    return Query.from_(table).select("*")
+
+
+def _frequency(view: QueryBuilder, col_name: str) -> QueryBuilder:
+    res = Query.from_(view).groupby(col_name).select(Count("*"), col_name)
+    return res
+
+
+def _sort(view: QueryBuilder, col_name: str, ascending: bool = True) -> QueryBuilder:
+    order = Order.asc if ascending else Order.desc
+    res = Query.from_(view).orderby(col_name, order=order).select("*")
+    return res
+
+
+def _run_ops(view: QueryBuilder, operations) -> QueryBuilder:
+    if not operations:
+        return view
+    op = operations[0]
+
+    # op = f:<column name>
+    if op.startswith("f:"):
+        col_name = "".join(op.split(":")[1:])
+        res = _frequency(view, col_name)
+    elif op.startswith("sa:"):
+        col_name = "".join(op.split(":")[1:])
+        res = _sort(view, col_name, True)
+    elif op.startswith("sd:"):
+        col_name = "".join(op.split(":")[1:])
+        res = _sort(view, col_name, False)
+    else:
+        raise ValueError("Unsupported operation")
+
+    print(res.get_sql())
+    return _run_ops(res, operations[1:])
 
 
 # create a post route for the application

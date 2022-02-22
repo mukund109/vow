@@ -5,7 +5,7 @@
 <table class="table table-scroll" x-data="sheet" x-bind="sheetkeys('{{ format_url(request.url) }}')">
     <tr>
       {% for col in columns %}
-      <th>{{ col }}</th>
+      <th x-ref="col-{{ loop.index0 }}">{{ col }}</th>
       {% endfor %}
     </tr>
   {% for row in rows %}
@@ -13,7 +13,7 @@
   <tr x-bind="row({{ loop.index0 }})">
     {% for col in columns %}
     <td x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})">
-      {{ row[col] }}
+      {{ row[loop.index0] }}
     </td>
     {% endfor %}
   </tr>
@@ -27,7 +27,6 @@
           colidx: 0,
 
           update_rowid(delta) {
-              console.log(this.rowidx);
               this.rowidx = Math.max(Math.min(this.rowidx + delta, {{ rows|length - 1 }}), 0)
             },
           update_colid(delta) {
@@ -71,7 +70,17 @@
             },
 
           '@keydown.shift.f.window'() {
-              window.location.href = `${url}op=f:` + this.colidx
+              col_name = this.$refs[`col-${this.colidx}`].innerText;
+              window.location.href = `${url}op=f:${col_name}`;
+            },
+
+          "@keydown.window"() {
+              col_name = this.$refs[`col-${this.colidx}`].innerText;
+              if (this.$event.key == ']'){
+                  window.location.href = `${url}op=sa:${col_name}`;
+                } else if (this.$event.key == '['){
+                    window.location.href = `${url}op=sd:${col_name}`;
+                  }
             }
 
         }));
