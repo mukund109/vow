@@ -1,12 +1,13 @@
+where was i
+* "Enter" on freq sheet doesn't work if its sorted
+* use `encodeURIComoponent` to encode query strings and path names
+
 need to think of a better way in which JS code can construct operations
 
 use color to indicate the kind of sheet
 
-how to make it super fast?
-
 operations todo
-* shift-F - enter
-  * filter by exact match
+* shift-F - enter * filter by exact match
 * pivot
 * sort
 * insert
@@ -32,3 +33,12 @@ column types
 interface for excluding columns
 
 polly-wide updates
+
+[Base]
+[Freq]
+-> special "Enter" action - filter action on source table
+
+[Base]
+-> `|` (regex, column) -> [Base]
+-> `F` (one or more columns) -> [Freq]
+-> `W` (key cols..., target col, agg col, agg op) [Pivot?]

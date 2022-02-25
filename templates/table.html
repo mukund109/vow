@@ -2,17 +2,21 @@
 {% block table %}
 
 
-<table class="table table-scroll" x-data="sheet" x-bind="sheetkeys('{{ format_url(request.url) }}')">
+<table class="table table-scroll"
+  x-data="sheet" 
+  x-bind="{{ sheet.typ }}_sheet()"
+  style="background:{{ '#eee6e6' if sheet.typ == 'freq' else '#97a9c152' }}">
     <tr>
-      {% for col in columns %}
+      {% for col in sheet.columns %}
       <th x-ref="col-{{ loop.index0 }}">{{ col }}</th>
       {% endfor %}
     </tr>
-  {% for row in rows %}
+  {% for row in sheet.rows %}
   {% set outerloop = loop %}
   <tr x-bind="row({{ loop.index0 }})">
-    {% for col in columns %}
-    <td x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})">
+    {% for col in sheet.columns %}
+    <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
+        x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})">
       {{ row[loop.index0] }}
     </td>
     {% endfor %}
@@ -21,21 +25,50 @@
 </table>
 
 <script>
+
   document.addEventListener('alpine:init', () => {
+      function performOp(op, params) {
+
+        let data = {operation: [op, params]};
+        // strip out '/' from the url
+        let path = window.location.pathname.replace('\/', '');
+
+        fetch(`/sheets/${path}`, {
+              method: "POST",
+              body: JSON.stringify(data),
+              headers: {
+                    'Content-Type': 'application/json'
+                  },
+            }).then(res => {
+                res.json().then(data => {
+                  console.log(data);
+                  window.location.href = new URL(data.new_sheet, window.location.origin)
+                });
+              });
+      }
+
+      function newURL2(op, params) {
+        let encodedOp = op + ':' + encodeURIComponent(encodeURIComponent(params));
+        let currentPath = window.location.pathname;
+        currentPath = (currentPath == '/') ? '' : currentPath;
+        let url = new URL(`${currentPath}/${encodedOp}`, window.location.href);
+        return url.href;
+      }
+
       Alpine.data('sheet', () => ({
           rowidx: 0,
           colidx: 0,
 
           update_rowid(delta) {
-              this.rowidx = Math.max(Math.min(this.rowidx + delta, {{ rows|length - 1 }}), 0)
+              this.rowidx = Math.max(Math.min(this.rowidx + delta, {{ sheet.rows|length - 1 }}), 0)
             },
           update_colid(delta) {
-              this.colidx = Math.max(Math.min(this.colidx + delta, {{ columns|length - 1 }}), 0)
+              this.colidx = Math.max(Math.min(this.colidx + delta, {{ sheet.columns|length - 1 }}), 0)
             }
 
         }));
 
-      Alpine.bind('sheetkeys', (url) => ({
+      let base_bindings = () => ({
           '@keydown.j.window'() {
               this.update_rowid(1);
             },
@@ -63,7 +96,7 @@
             },
 
           '@keydown.shift.g.window'() {
-              this.rowidx = {{ rows|length - 1}};
+              this.rowidx = {{ sheet.rows|length - 1}};
             },
           '@keydown.g.window'() {
               if (!this.$event.shiftKey) this.rowidx = 0
@@ -71,18 +104,32 @@
 
           '@keydown.shift.f.window'() {
               col_name = this.$refs[`col-${this.colidx}`].innerText;
-              window.location.href = `${url}op=f:${col_name}`;
+              performOp('f', col_name);
             },
 
           "@keydown.window"() {
               col_name = this.$refs[`col-${this.colidx}`].innerText;
               if (this.$event.key == ']'){
-                  window.location.href = `${url}op=sa:${col_name}`;
+                  performOp('sa', col_name);
                 } else if (this.$event.key == '['){
-                    window.location.href = `${url}op=sd:${col_name}`;
+                    performOp('sd', col_name);
                   }
             }
+        });
 
+      Alpine.bind('base_sheet', () => ({
+          ...base_bindings()
+        }));
+
+      Alpine.bind('freq_sheet', () => ({
+          ...base_bindings(),
+
+          '@keydown.enter.window'() {
+              col_name = this.$refs[`col-${this.colidx}`].innerText;
+              cell_value = this.$refs[`cell-${this.rowidx}-${this.colidx}`].innerText;
+              // will definitely break if there are colons in cell_value or col_name
+              performOp('fil', `${col_name}:${cell_value}`);
+            }
         }));
 
       Alpine.bind('row', (idx) => ({
