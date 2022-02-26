@@ -31,10 +31,9 @@ sheets = dict()
 
 
 class Sheet:
-    def __init__(self, view: QueryBuilder, typ: str, source: Optional["Sheet"]):
+    def __init__(self, view: QueryBuilder, source: Optional["Sheet"]):
         # TODO: source is different for different types of sheets
         self.view = view
-        self.typ = typ
 
         conn = _get_conn()
         conn.execute(view.limit(20).get_sql())
@@ -43,7 +42,9 @@ class Sheet:
         self.uid = next(unique_sequence)
         self.source = source
 
-    def frequency(self, col_name: str) -> "Sheet":
+        self.orderbys = [(field.name, order) for field, order in self.view._orderbys]
+
+    def frequency(self, col_name: str) -> "FreqSheet":
         # can check if column name is in self.columns
         res = Query.from_(self.view).groupby(col_name).select(Count("*"), col_name)
         return FreqSheet(res, self)
@@ -51,11 +52,18 @@ class Sheet:
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        return Sheet(res, "base", self)
+        return type(self)(res, self.source)
 
     def filter_exact(self, field: str, keyword: str) -> "Sheet":
         res = Query.from_(self.view).where(Field(field) == keyword).select("*")
-        return Sheet(res, "base", self)
+        return Sheet(res, self)
+
+    @property
+    def typ(self):
+        if type(self) == FreqSheet:
+            return "freq"
+        else:
+            return "base"
 
     def run_op(self, operation: Tuple[str, str]) -> "Sheet":
         if not operation:
@@ -84,7 +92,7 @@ class Sheet:
 
 class FreqSheet(Sheet):
     def __init__(self, view: QueryBuilder, source: "Sheet"):
-        super().__init__(view, "freq", source)
+        super().__init__(view, source)
         self.source = source
 
     def filter_exact(self, field: str, keyword: str) -> "Sheet":
@@ -116,7 +124,7 @@ def post_view(uid: str, operation: Operation):
 def index():
     # redirect to initial view
     if "gta" not in sheets:
-        sheets["gta"] = Sheet(_initialize_view("gta"), "base", None)
+        sheets["gta"] = Sheet(_initialize_view("gta"), None)
 
     return RedirectResponse(url="/gta")
 
