@@ -1,11 +1,25 @@
 {% extends "index.html" %}
 {% block table %}
 
+<style>
+.table th {
+  border-bottom: 0.2rem solid {{ '#0f057b' if sheet.typ == 'freq' else '#00511c' }};
+}
+.table td, .table th {
+  padding: 0.4rem 0.4rem;
+}
+
+.selected-cell {
+  background: {{ '#b5c5cc;' if sheet.typ == 'freq' else '#b7c8b5' }};
+}
+.selected-col {
+  background: {{ '#f2f4ff' if sheet.typ == 'freq' else '#eef0f3' }};
+}
+</style>
 
 <table class="table table-scroll"
   x-data="sheet" 
-  x-bind="{{ sheet.typ }}_sheet()"
-  style="background:{{ '#eee6e6' if sheet.typ == 'freq' else '#97a9c152' }}">
+  x-bind="{{ sheet.typ }}_sheet()">
     <tr>
       {% for col in sheet.columns %}
       <th x-ref="col-{{ loop.index0 }}">{{ col }}</th>
@@ -140,11 +154,11 @@
         }));
 
       Alpine.bind('cell', (i, j) => ({
-          ':style'() {
+          ':class'() {
               if (this.rowidx == i && this.colidx == j) {
-                  return { background : '#d5e1d9' }
+                  return 'selected-cell'
               } else if (this.colidx == j) {
-                  return { background : '#eef0f3' }
+                  return 'selected-col'
               } else {
                   return {}
               }
