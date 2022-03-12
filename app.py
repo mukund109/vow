@@ -132,7 +132,9 @@ class Operation(BaseModel):
 
 def _get_conn():
     # TODO: closing the connection?
-    return duckdb.connect("vow.db", read_only=True)
+    conn = duckdb.connect("vow.db", read_only=True)
+    conn.execute("PRAGMA default_null_order='NULLS LAST'")
+    return conn
 
 
 def _initialize_view(table: str) -> QueryBuilder:
