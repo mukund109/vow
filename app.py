@@ -17,7 +17,6 @@ from fastapi.responses import RedirectResponse
 app = FastAPI()
 # set the template directory
 templates = Jinja2Templates(directory="templates")
-app.mount("/site", StaticFiles(directory="static"), name="site")
 
 
 def uniqueid():
@@ -29,7 +28,7 @@ def uniqueid():
 
 unique_sequence = uniqueid()
 
-sheets = dict()
+sheets: Dict[str, "Sheet"] = dict()
 
 
 class Sheet:
@@ -46,10 +45,10 @@ class Sheet:
 
         self.orderbys = [(field.name, order) for field, order in self.view._orderbys]
 
-    def frequency(self, col_name: str) -> "FreqSheet":
+    def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
-        res = Query.from_(self.view).groupby(col_name).select(Count("*"), col_name)
-        return FreqSheet(res, self)
+        res = Query.from_(self.view).groupby(*cols).select(Count("*"), *cols)
+        return FreqSheet(res, key_cols=cols, source=self)
 
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
@@ -67,16 +66,16 @@ class Sheet:
         else:
             return "base"
 
-    def run_op(self, operation: Tuple[str, str]) -> "Sheet":
-        if not operation:
-            return self
+    def run_op(self, operation: Union["Operation", "FreqOperation"]) -> "Sheet":
 
-        op, params = operation
+        if isinstance(operation, FreqOperation):
+            res = self.frequency(operation.cols)
+            return res
 
-        if op == "f":
-            col_name = params
-            res = self.frequency(col_name)
-        elif op == "sa":
+        op = operation.operation_type
+        params = operation.params
+
+        if op == "sa":
             col_name = params
             res = self.sort(col_name, True)
         elif op == "sd":
@@ -93,16 +92,23 @@ class Sheet:
 
 
 class FreqSheet(Sheet):
-    def __init__(self, view: QueryBuilder, source: "Sheet"):
+    def __init__(self, view: QueryBuilder, key_cols: List[str], source: "Sheet"):
         super().__init__(view, source)
         self.source = source
+        self.key_cols = key_cols
 
     def filter_exact(self, field: str, keyword: str) -> "Sheet":
         return self.source.filter_exact(field, keyword)
 
 
+class FreqOperation(BaseModel):
+    operation_type: str = "f"
+    cols: List[str]
+
+
 class Operation(BaseModel):
-    operation: Tuple[str, str]
+    operation_type: str
+    params: str
 
 
 def _get_conn():
@@ -110,25 +116,30 @@ def _get_conn():
     return duckdb.connect("vow.db", read_only=True)
 
 
-# passing uid in the body might be semantically more sensible
-@app.post("/sheets/{uid}")
-def post_view(uid: str, operation: Operation):
-    prev_sheet = sheets[uid]
+def _initialize_view(table: str) -> QueryBuilder:
+    return Query.from_(table).select("*")
 
-    new_sheet = prev_sheet.run_op(operation.operation)
 
-    sheets[new_sheet.uid] = new_sheet
-
-    return {"new_sheet": new_sheet.uid, "yolo": "Success"}
+if "gta" not in sheets:
+    sheets["gta"] = Sheet(_initialize_view("depmap_samples"), None)
 
 
 @app.get("/")
 def index():
     # redirect to initial view
-    if "gta" not in sheets:
-        sheets["gta"] = Sheet(_initialize_view("gta"), None)
-
     return RedirectResponse(url="/gta")
+
+
+# passing uid in the body might be semantically more sensible
+@app.post("/sheets/{uid}")
+def post_view(uid: str, operation: Union[Operation, FreqOperation]):
+    prev_sheet = sheets[uid]
+
+    new_sheet = prev_sheet.run_op(operation)
+
+    sheets[new_sheet.uid] = new_sheet
+
+    return {"new_sheet": new_sheet.uid, "yolo": "Success"}
 
 
 @app.get("/{uid}")
@@ -140,17 +151,16 @@ def get_sheet_by_uid(request: Request, uid: str):
         "table.html",
         dict(
             request=request,
-            msg="how are you feeling?",
+            msg="vow",
             sheet=sheet,
         ),
     )
 
 
-def _initialize_view(table: str) -> QueryBuilder:
-    return Query.from_(table).select("*")
-
+app.mount("/js/", StaticFiles(directory="js"), name="javascript")
+app.mount("/", StaticFiles(directory="static"), name="site")
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, reload=True)
+    uvicorn.run(app)
