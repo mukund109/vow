@@ -9,12 +9,18 @@
   padding: 0.4rem 0.4rem;
 }
 
-.selected-cell {
-  background: {{ '#b5c5cc;' if sheet.typ == 'freq' else '#b7c8b5' }};
+.active td {
+  background: {{ '#eef0f3' if sheet.typ == 'freq' else '#eff3ee' }};
 }
+
 .selected-col {
-  background: {{ '#f2f4ff' if sheet.typ == 'freq' else '#eef0f3' }};
+  background: {{ '#eef0f3' if sheet.typ == 'freq' else '#eff3ee' }};
 }
+
+td.selected-cell {
+  background: {{ '#d4ddf7' if sheet.typ == 'freq' else '#b7c8b5' }};
+}
+
 </style>
 
 <table class="table table-scroll"
@@ -123,9 +129,9 @@
 
           "@keydown.window"() {
               col_name = this.$refs[`col-${this.colidx}`].innerText;
-              if (this.$event.key == ']'){
+              if (this.$event.key == '['){
                   performOp('sa', col_name);
-                } else if (this.$event.key == '['){
+                } else if (this.$event.key == ']'){
                     performOp('sd', col_name);
                   }
             }

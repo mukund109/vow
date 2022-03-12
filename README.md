@@ -42,3 +42,10 @@ polly-wide updates
 -> `|` (regex, column) -> [Base]
 -> `F` (one or more columns) -> [Freq]
 -> `W` (key cols..., target col, agg col, agg op) [Pivot?]
+
+# few interesting things
+RestrictedPython package
+https://stackoverflow.com/questions/63160370/how-can-i-accept-and-run-users-code-securely-on-my-web-app
+
+there's an easy way to check the column names in duckdb, and their types
+https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76

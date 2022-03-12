@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import random
 import duckdb
 from typing import Dict, List, Optional, Union, Tuple
@@ -16,6 +17,7 @@ from fastapi.responses import RedirectResponse
 app = FastAPI()
 # set the template directory
 templates = Jinja2Templates(directory="templates")
+app.mount("/site", StaticFiles(directory="static"), name="site")
 
 
 def uniqueid():
