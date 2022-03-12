@@ -21,6 +21,10 @@ td.selected-cell {
   background: {{ '#d4ddf7' if sheet.typ == 'freq' else '#b7c8b5' }};
 }
 
+.null {
+  color: #c42b2b;
+}
+
 </style>
 
 <table class="table table-scroll"
@@ -42,8 +46,17 @@ td.selected-cell {
   <tr x-bind="row({{ loop.index0 }})">
     {% for col in sheet.columns %}
     <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
-        x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})">
+        x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
+        class="
+        {% if row[loop.index0] is none %}
+        null
+        {% endif %}
+        ">
+      {% if row[loop.index0] is none %}
+        NaN
+      {% else %}
       {{ row[loop.index0] }}
+      {% endif %}
     </td>
     {% endfor %}
   </tr>

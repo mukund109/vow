@@ -53,10 +53,15 @@ class Sheet:
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        return type(self)(res, self.source)
+        if isinstance(self, FreqSheet):
+            return FreqSheet(res, self.key_cols, self.source)
+        return Sheet(res, self.source)
 
-    def filter_exact(self, field: str, keyword: str) -> "Sheet":
-        res = Query.from_(self.view).where(Field(field) == keyword).select("*")
+    def filter_exact(self, field: str, keyword: Optional[str]) -> "Sheet":
+        if keyword is None:
+            res = Query.from_(self.view).where(Field(field).isnull()).select("*")
+        else:
+            res = Query.from_(self.view).where(Field(field) == keyword).select("*")
         return Sheet(res, self)
 
     @property
@@ -66,10 +71,18 @@ class Sheet:
         else:
             return "base"
 
-    def run_op(self, operation: Union["Operation", "FreqOperation"]) -> "Sheet":
+    def run_op(
+        self, operation: Union["Operation", "FreqOperation", "FilterOperation"]
+    ) -> "Sheet":
 
         if isinstance(operation, FreqOperation):
             res = self.frequency(operation.cols)
+            return res
+
+        if isinstance(operation, FilterOperation):
+            col = operation.col
+            keyword = operation.keyword
+            res = self.filter_exact(field=col, keyword=keyword)
             return res
 
         op = operation.operation_type
@@ -106,6 +119,12 @@ class FreqOperation(BaseModel):
     cols: List[str]
 
 
+class FilterOperation(BaseModel):
+    operation_type: str = "fil"
+    col: str
+    keyword: Optional[str]
+
+
 class Operation(BaseModel):
     operation_type: str
     params: str
@@ -121,7 +140,7 @@ def _initialize_view(table: str) -> QueryBuilder:
 
 
 if "gta" not in sheets:
-    sheets["gta"] = Sheet(_initialize_view("depmap_samples"), None)
+    sheets["gta"] = Sheet(_initialize_view("test_2"), None)
 
 
 @app.get("/")
@@ -132,7 +151,7 @@ def index():
 
 # passing uid in the body might be semantically more sensible
 @app.post("/sheets/{uid}")
-def post_view(uid: str, operation: Union[Operation, FreqOperation]):
+def post_view(uid: str, operation: Union[Operation, FreqOperation, FilterOperation]):
     prev_sheet = sheets[uid]
 
     new_sheet = prev_sheet.run_op(operation)
