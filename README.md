@@ -1,38 +1,40 @@
 where was i
-* "Enter" on freq sheet doesn't work if its sorted
-* use `encodeURIComoponent` to encode query strings and path names
+* check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
+* "Enter" on freq sheet should work on the entire row
+* need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
+* get as far as possible can with server-side
+* re-write frontend in Elm in July?
 
 need to think of a better way in which JS code can construct operations
 
 use color to indicate the kind of sheet
 
 operations todo
-* shift-F - enter * filter by exact match
+* filter
 * pivot
-* sort
 * insert
+
+# small things
+* distinct counts
+* multiple col shift-F
+* show keypress hints (for available ops)
+
 
 # potential bugs
 rename columns
-* problem - if shift-F is done twice, both columns are called `count_star()`
+* if shift-F is done twice, both columns are called `count_star()`
 
 frontend-interactivity
 * how would column shifting work?
 * hiding columns
 
-# potential features
-* add a button for assigning to curators after filtering
-
 # how will these be tackled?
 column types
-* if we make all of them string, how will we plot floats like age
+* if we make all of them string, how will we plot floats
 * NaN values
 * operations on columns
-* passing long exact matches by url
 
 interface for excluding columns
-
-polly-wide updates
 
 [Base]
 [Freq]
