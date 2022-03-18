@@ -18,6 +18,7 @@ operations todo
 * distinct counts
 * multiple col shift-F
 * show keypress hints (for available ops)
+* on pressing and holding just Shift, it shows which aggregation functions are applied to which columns
 
 
 # potential bugs
@@ -51,3 +52,8 @@ https://stackoverflow.com/questions/63160370/how-can-i-accept-and-run-users-code
 
 there's an easy way to check the column names in duckdb, and their types
 https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
+
+duckdb-wasm (READ thoroughly)
+https://duckdb.org/2021/10/29/duckdb-wasm.html
+
+use this for fully-client side vow?
