@@ -17,6 +17,10 @@
   background: {{ '#eef0f3' if sheet.typ == 'freq' else '#eff3ee' }};
 }
 
+th.key-col {
+  background: #dedede;
+}
+
 td.selected-cell {
   background: {{ '#d4ddf7' if sheet.typ == 'freq' else '#b7c8b5' }};
 }
@@ -38,7 +42,7 @@ td.selected-cell {
   ">
     <tr>
       {% for col in sheet.columns %}
-      <th x-ref="col-{{ loop.index0 }}">{{ col }}</th>
+      <th x-ref="col-{{ loop.index0 }}" x-bind="col({{ loop.index0 }})">{{ col }}</th>
       {% endfor %}
     </tr>
   {% for row in sheet.rows %}

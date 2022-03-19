@@ -40,6 +40,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('sheet', (num_rows, num_cols) => ({
     rowidx: 0,
     colidx: 0,
+    key_cols: [],
 
     update_rowid(delta) {
       this.rowidx = Math.max(Math.min(this.rowidx + delta, num_rows - 1), 0)
@@ -52,7 +53,16 @@ document.addEventListener('alpine:init', () => {
     },
     update_rowid_to_min() {
       this.rowidx = 0;
-    }
+    },
+    toggle_key(colidx) {
+      let index = this.key_cols.indexOf(colidx);
+
+      if (index === -1) {
+        this.key_cols.push(colidx);
+      } else {
+        this.key_cols.splice(index, 1);
+      }
+    },
 
   }));
 
@@ -90,9 +100,22 @@ document.addEventListener('alpine:init', () => {
       if (!this.$event.shiftKey) this.update_rowid_to_min()
     },
 
+    '@keydown.!.window'() {
+      this.toggle_key(this.colidx);
+    },
+
     '@keydown.shift.f.window'() {
       col_name = this.$refs[`col-${this.colidx}`].innerText;
       performFreqOp([col_name]);
+    },
+
+    '@keydown.f.window'() {
+      if (this.$event.shiftKey) {
+        console.log("pressed shift-F");
+        return
+      }
+      col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
+      performFreqOp(col_names);
     },
 
     "@keydown.window"() {
@@ -129,6 +152,16 @@ document.addEventListener('alpine:init', () => {
   Alpine.bind('row', (idx) => ({
     ':class'() {
       return this.rowidx == idx ? 'active' : ''
+    }
+
+  }));
+
+  Alpine.bind('col', (j) => ({
+    ':class'() {
+      return {
+        'active': (this.colidx == j),
+        'key-col': this.key_cols.includes(j)
+      }
     }
 
   }));
