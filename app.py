@@ -40,7 +40,11 @@ class Sheet:
         self.view = view
 
         conn = _get_conn()
-        conn.execute(view.limit(20).get_sql())
+        try:
+            conn.execute(view.limit(40).get_sql())
+        except RuntimeError as e:
+            print(self.view.limit(40).get_sql())
+            raise e
         self.rows = conn.fetchall()
         self.columns = [col[0] for col in conn.description]
         self.uid = next(unique_sequence)
@@ -50,7 +54,12 @@ class Sheet:
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
-        res = Query.from_(self.view).groupby(*cols).select(Count("*"), *cols)
+        res = (
+            Query.from_(self.view)
+            .groupby(*cols)
+            .select(Count("*").as_("row_count"), *cols)
+            .orderby(Count("*"), order=Order.desc)
+        )
         return FreqSheet(res, key_cols=cols, source=self)
 
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
