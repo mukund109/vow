@@ -57,7 +57,10 @@ class Sheet:
         res = (
             Query.from_(self.view)
             .groupby(*cols)
-            .select(Count("*").as_("row_count"), *cols)
+            .select(
+                *cols,
+                Count("*").as_("num_rows"),
+            )
             .orderby(Count("*"), order=Order.desc)
         )
         return FreqSheet(res, key_cols=cols, source=self)
