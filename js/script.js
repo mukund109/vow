@@ -135,12 +135,9 @@ document.addEventListener('alpine:init', () => {
 
   Alpine.bind('cell', (i, j) => ({
     ':class'() {
-      if (this.rowidx == i && this.colidx == j) {
-        return 'selected-cell'
-      } else if (this.colidx == j) {
-        return 'selected-col'
-      } else {
-        return {}
+      return {
+        'selected-cell': (this.rowidx == i) && (this.colidx == j),
+        'selected-col': (this.colidx == j),
       }
     },
 
