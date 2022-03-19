@@ -5,6 +5,11 @@ where was i
 * get as far as possible can with server-side
 * re-write frontend in Elm in July?
 
+display message if server responds with 400 code on POST request
+example of message - "pivot column needs to have less than X values"
+
+check for SQL injection
+
 need to think of a better way in which JS code can construct operations
 
 use color to indicate the kind of sheet

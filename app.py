@@ -1,13 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import random
 import duckdb
 from typing import Dict, List, Optional, Union, Tuple
-from pypika import Table, Query, Field
+from pypika import Table, Query, Field, Case
 from pypika.enums import Order
 from pypika.queries import QueryBuilder
-from pypika.functions import Count
+from pypika.functions import Count, First, Max
 from fastapi import Request
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
@@ -34,12 +34,13 @@ unique_sequence = uniqueid()
 sheets: Dict[str, "Sheet"] = dict()
 
 
-def _run_query(view: QueryBuilder) -> Tuple[List, List]:
+def _run_query(view: QueryBuilder, max_rows=40) -> Tuple[List, List]:
     conn = _get_conn()
+    sql_query = view.limit(max_rows).get_sql()
     try:
-        conn.execute(view.limit(40).get_sql())
+        conn.execute(sql_query)
     except RuntimeError as e:
-        print(view.limit(40).get_sql())
+        print(sql_query)
         raise e
     rows = conn.fetchall()
     columns = [col[0] for col in conn.description]
@@ -86,6 +87,33 @@ class Sheet:
         res = res.select("*")
         return Sheet(res, self)
 
+    def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
+        """
+        aggs: (field, aggfunction)
+        """
+        col_limit = 35
+        temp = Query.from_(self.view)
+        temp = temp.select(pivot_col).distinct()
+        rows, cols = _run_query(temp, max_rows=col_limit + 1)
+        assert len(cols) == 1
+        print(len(rows), rows)
+        if len(rows) > col_limit:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The pivot column needs to have less than {col_limit} unique values",
+            )
+        pivot_vals = [row[0] for row in rows]
+
+        # handling NULL in pivot_vals
+        cases = [
+            Max(Case().when(Field(pivot_col) == val, Field(agg_col))).as_(
+                ("NaN" if val is None else val)
+            )
+            for val in pivot_vals
+        ]
+        res = Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
+        return Sheet(res, self)
+
     @property
     def typ(self):
         if type(self) == FreqSheet:
@@ -94,7 +122,10 @@ class Sheet:
             return "base"
 
     def run_op(
-        self, operation: Union["Operation", "FreqOperation", "FilterOperation"]
+        self,
+        operation: Union[
+            "Operation", "FreqOperation", "FilterOperation", "PivotOperation"
+        ],
     ) -> "Sheet":
 
         if isinstance(operation, FreqOperation):
@@ -105,6 +136,11 @@ class Sheet:
             filters = operation.filters
             res = self.filter_exact(filters=filters)
             return res
+
+        if isinstance(operation, PivotOperation):
+            return self.pivot(
+                operation.key_cols, operation.pivot_col, operation.agg_col
+            )
 
         op = operation.operation_type
         params = operation.params
@@ -145,6 +181,13 @@ class FilterOperation(BaseModel):
     filters: List[Tuple[str, Optional[str]]]
 
 
+class PivotOperation(BaseModel):
+    operation_type: str = "pivot"
+    key_cols: List[str]
+    pivot_col: str
+    agg_col: str
+
+
 class Operation(BaseModel):
     operation_type: str
     params: str
@@ -173,7 +216,10 @@ def index():
 
 # passing uid in the body might be semantically more sensible
 @app.post("/sheets/{uid}")
-def post_view(uid: str, operation: Union[Operation, FreqOperation, FilterOperation]):
+def post_view(
+    uid: str,
+    operation: Union[Operation, FreqOperation, FilterOperation, PivotOperation],
+):
     prev_sheet = sheets[uid]
 
     new_sheet = prev_sheet.run_op(operation)

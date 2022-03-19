@@ -16,6 +16,11 @@ document.addEventListener('alpine:init', () => {
     sendPostRequest(data);
   }
 
+  function performPivotOp(key_cols, pivot_col, agg_col) {
+    let data = { operation_type: "pivot", key_cols: key_cols, pivot_col: pivot_col, agg_col: agg_col }
+    sendPostRequest(data);
+  }
+
   function sendPostRequest(data) {
 
     // strip out '/' from the url
@@ -42,6 +47,7 @@ document.addEventListener('alpine:init', () => {
     rowidx: 0,
     colidx: 0,
     key_cols: [],
+    agg_col: undefined,
 
     update_rowid(delta) {
       this.rowidx = Math.max(Math.min(this.rowidx + delta, num_rows - 1), 0)
@@ -64,6 +70,13 @@ document.addEventListener('alpine:init', () => {
         this.key_cols.splice(index, 1);
       }
     },
+    toggle_agg_col(colidx) {
+      if (colidx == this.agg_col) {
+        this.agg_col = undefined
+      } else {
+        this.agg_col = colidx
+      }
+    }
 
   }));
 
@@ -105,6 +118,10 @@ document.addEventListener('alpine:init', () => {
       this.toggle_key(this.colidx);
     },
 
+    '@keydown.+.window'() {
+      this.toggle_agg_col(this.colidx);
+    },
+
     '@keydown.shift.f.window'() {
       col_name = this.$refs[`col-${this.colidx}`].innerText;
       performFreqOp([col_name]);
@@ -117,6 +134,19 @@ document.addEventListener('alpine:init', () => {
       }
       col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
       performFreqOp(col_names);
+    },
+
+    '@keydown.shift.w.window'() {
+
+      if (this.agg_col == undefined) {
+        alert("pick a column to aggregate on")
+        return
+      }
+      // this logic is repeating
+      key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
+      pivot_col = this.$refs[`col-${this.colidx}`].innerText;
+      agg_col = this.$refs[`col-${this.agg_col}`].innerText;
+      performPivotOp(key_col_names, pivot_col, agg_col);
     },
 
     "@keydown.window"() {
@@ -168,7 +198,8 @@ document.addEventListener('alpine:init', () => {
     ':class'() {
       return {
         'active': (this.colidx == j),
-        'key-col': this.key_cols.includes(j)
+        'key-col': this.key_cols.includes(j),
+        'agg-col': this.agg_col == j
       }
     }
 
