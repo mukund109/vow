@@ -4,13 +4,14 @@ document.addEventListener('alpine:init', () => {
     sendPostRequest(data);
   }
 
-  function performFilterOp(col, keyword) {
-    let data = { operation_type: "fil", col: col, keyword: keyword }
+  function performFilterOp(filters) {
+    // filters is a list of (field, keyword) pairs
+    // e.g. filters = [["name", "Yolo"], ["location": "Moon"]]
+    let data = { operation_type: "fil", filters: filters }
     sendPostRequest(data);
   }
 
   function performFreqOp(cols) {
-    // let data = {operation: {operation_type : "f", cols: cols}}
     let data = { operation_type: "f", cols: cols }
     sendPostRequest(data);
   }
@@ -136,16 +137,23 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings(),
 
     '@keydown.enter.window'() {
-      // col_name = this.$refs[`col-${this.colidx}`].innerText;
-      col_name = key_cols[0]
-      cell_el = this.$refs[`cell-${this.rowidx}-${this.colidx}`];
-      // check if value is NULL or an empty string
-      if (cell_el.classList.contains("null")) {
-        cell_value = null
-      } else {
-        cell_value = cell_el.innerText;
+
+      // key_cols is a list of column indices
+      function cellToVal(cell_el) {
+        // check if cell is NULL or an empty string
+        if (cell_el.classList.contains("null")) {
+          return null
+        } else {
+          return cell_el.innerText;
+        }
       }
-      performFilterOp(col_name, cell_value);
+
+      filters = key_cols.map(j => [
+        this.$refs[`col-${j}`].innerText,
+        cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
+      ])
+
+      performFilterOp(filters);
     }
   }));
 

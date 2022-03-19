@@ -72,11 +72,14 @@ class Sheet:
             return FreqSheet(res, self.key_cols, self.source)
         return Sheet(res, self.source)
 
-    def filter_exact(self, field: str, keyword: Optional[str]) -> "Sheet":
-        if keyword is None:
-            res = Query.from_(self.view).where(Field(field).isnull()).select("*")
-        else:
-            res = Query.from_(self.view).where(Field(field) == keyword).select("*")
+    def filter_exact(self, filters: List[Tuple[str, Optional[str]]]) -> "Sheet":
+        res = Query.from_(self.view)
+        for field, keyword in filters:
+            if keyword is None:
+                res = res.where(Field(field).isnull())
+            else:
+                res = res.where(Field(field) == keyword)
+        res = res.select("*")
         return Sheet(res, self)
 
     @property
@@ -95,9 +98,8 @@ class Sheet:
             return res
 
         if isinstance(operation, FilterOperation):
-            col = operation.col
-            keyword = operation.keyword
-            res = self.filter_exact(field=col, keyword=keyword)
+            filters = operation.filters
+            res = self.filter_exact(filters=filters)
             return res
 
         op = operation.operation_type
@@ -109,10 +111,6 @@ class Sheet:
         elif op == "sd":
             col_name = params
             res = self.sort(col_name, False)
-        elif op == "fil":
-            field = params.split(":")[0]
-            val = ":".join(params.split(":")[1:])
-            res = self.filter_exact(field=field, keyword=val)
         else:
             raise ValueError("Unsupported operation")
 
@@ -125,8 +123,12 @@ class FreqSheet(Sheet):
         self.source = source
         self.key_cols = key_cols
 
-    def filter_exact(self, field: str, keyword: str) -> "Sheet":
-        return self.source.filter_exact(field, keyword)
+    def filter_exact(self, filters: List[Tuple[str, Optional[str]]]) -> "Sheet":
+        return self.source.filter_exact(filters)
+
+    @property
+    def key_col_idx(self) -> List[int]:
+        return [self.columns.index(key_col) for key_col in self.key_cols]
 
 
 class FreqOperation(BaseModel):
@@ -136,8 +138,7 @@ class FreqOperation(BaseModel):
 
 class FilterOperation(BaseModel):
     operation_type: str = "fil"
-    col: str
-    keyword: Optional[str]
+    filters: List[Tuple[str, Optional[str]]]
 
 
 class Operation(BaseModel):

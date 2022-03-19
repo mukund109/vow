@@ -35,7 +35,7 @@ td.selected-cell {
   x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }})"
   x-bind="
   {% if sheet.typ == 'freq' %}
-  {{ sheet.typ }}_sheet({{ sheet.key_cols }})
+  {{ sheet.typ }}_sheet({{ sheet.key_col_idx }})
   {% else %}
   {{ sheet.typ }}_sheet()
   {% endif %}
