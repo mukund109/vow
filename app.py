@@ -34,19 +34,23 @@ unique_sequence = uniqueid()
 sheets: Dict[str, "Sheet"] = dict()
 
 
+def _run_query(view: QueryBuilder) -> Tuple[List, List]:
+    conn = _get_conn()
+    try:
+        conn.execute(view.limit(40).get_sql())
+    except RuntimeError as e:
+        print(view.limit(40).get_sql())
+        raise e
+    rows = conn.fetchall()
+    columns = [col[0] for col in conn.description]
+    return rows, columns
+
+
 class Sheet:
     def __init__(self, view: QueryBuilder, source: Optional["Sheet"]):
         # TODO: source is different for different types of sheets
         self.view = view
-
-        conn = _get_conn()
-        try:
-            conn.execute(view.limit(40).get_sql())
-        except RuntimeError as e:
-            print(self.view.limit(40).get_sql())
-            raise e
-        self.rows = conn.fetchall()
-        self.columns = [col[0] for col in conn.description]
+        self.rows, self.columns = _run_query(self.view)
         self.uid = next(unique_sequence)
         self.source = source
 
