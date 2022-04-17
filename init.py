@@ -10,4 +10,4 @@ client = session.client(
     aws_secret_access_key=os.environ["SPACES_SECRET"],
 )
 
-client.download_file("SPACES_BUCKET"], "vow.db", "vow.db")
+client.download_file(["SPACES_BUCKET"], "vow.db", "vow.db")
