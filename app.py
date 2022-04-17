@@ -11,12 +11,15 @@ from pypika.functions import Count
 from fastapi import Request
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
+from utils import fetch_data
 
 
 # create a flask application
 app = FastAPI()
 # set the template directory
 templates = Jinja2Templates(directory="templates")
+
+fetch_data()
 
 
 def uniqueid():
