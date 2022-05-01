@@ -1,9 +1,19 @@
 where was i
+* loading screen
+* show alert on server response
+* BUG: freq of freq - "num_rows" isn't a column
+  * freq1 > freq2 > enter takes you back to original sheet instead of freq1 sheet
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
-* "Enter" on freq sheet should work on the entire row
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
 * get as far as possible can with server-side
 * re-write frontend in Elm in July?
+* sort indicator
+* arrow key navigation
+* shortcuts for opening study-metadata, sample-metadata
+* doc-sidebar
+* links to previous sheets
+  * list of previous sheets should not change on sort
+  * browser history can still change
 
 display message if server responds with 400 code on POST request
 example of message - "pivot column needs to have less than X values"

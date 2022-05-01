@@ -55,7 +55,9 @@ class Sheet:
         self.uid = next(unique_sequence)
         self.source = source
 
-        self.orderbys = [(field.name, order) for field, order in self.view._orderbys]
+        self.orderbys = [
+            (field.name, order) for field, order in self.view._orderbys
+        ]
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
@@ -77,7 +79,9 @@ class Sheet:
             return FreqSheet(res, self.key_cols, self.source)
         return Sheet(res, self.source)
 
-    def filter_exact(self, filters: List[Tuple[str, Optional[str]]]) -> "Sheet":
+    def filter_exact(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
         res = Query.from_(self.view)
         for field, keyword in filters:
             if keyword is None:
@@ -100,7 +104,10 @@ class Sheet:
         if len(rows) > col_limit:
             raise HTTPException(
                 status_code=400,
-                detail=f"The pivot column needs to have less than {col_limit} unique values",
+                detail=(
+                    "The pivot column needs to have less than"
+                    f" {col_limit} unique values"
+                ),
             )
         pivot_vals = [row[0] for row in rows]
 
@@ -111,7 +118,9 @@ class Sheet:
             )
             for val in pivot_vals
         ]
-        res = Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
+        res = (
+            Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
+        )
         return Sheet(res, self)
 
     @property
@@ -158,12 +167,16 @@ class Sheet:
 
 
 class FreqSheet(Sheet):
-    def __init__(self, view: QueryBuilder, key_cols: List[str], source: "Sheet"):
+    def __init__(
+        self, view: QueryBuilder, key_cols: List[str], source: "Sheet"
+    ):
         super().__init__(view, source)
         self.source = source
         self.key_cols = key_cols
 
-    def filter_exact(self, filters: List[Tuple[str, Optional[str]]]) -> "Sheet":
+    def filter_exact(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
         return self.source.filter_exact(filters)
 
     @property
@@ -218,7 +231,9 @@ def index():
 @app.post("/sheets/{uid}")
 def post_view(
     uid: str,
-    operation: Union[Operation, FreqOperation, FilterOperation, PivotOperation],
+    operation: Union[
+        Operation, FreqOperation, FilterOperation, PivotOperation
+    ],
 ):
     prev_sheet = sheets[uid]
 
