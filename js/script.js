@@ -168,9 +168,12 @@ document.addEventListener('alpine:init', () => {
 
     "@keydown.window"() {
       const col_name = this.$refs[`col-${this.colidx}`].innerText;
-      if (this.$event.key == '[') {
+      if (this.$event.ctrlKey) {
+        return
+      }
+      if (this.$event.key == ']') {
         this.performOp('sa', { 'params': col_name });
-      } else if (this.$event.key == ']') {
+      } else if (this.$event.key == '[') {
         this.performOp('sd', { 'params': col_name });
       }
     }
