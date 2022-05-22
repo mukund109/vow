@@ -6,7 +6,6 @@ where was i
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
 * get as far as possible can with server-side
-* re-write frontend in Elm in July?
 * sort indicator
 * arrow key navigation
 * shortcuts for opening study-metadata, sample-metadata
@@ -14,6 +13,10 @@ where was i
 * links to previous sheets
   * list of previous sheets should not change on sort
   * browser history can still change
+* mouse - highlight on hover
+* some kind of pagination
+
+* re-write frontend in Elm in July?
 
 display message if server responds with 400 code on POST request
 example of message - "pivot column needs to have less than X values"
