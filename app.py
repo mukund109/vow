@@ -79,16 +79,23 @@ class Sheet:
             return FreqSheet(res, self.key_cols, self.source)
         return Sheet(res, self.source)
 
-    def filter_exact(
-        self, filters: List[Tuple[str, Optional[str]]]
-    ) -> "Sheet":
-        res = Query.from_(self.view)
+    def _filter_exact(
+        self, view, filters: List[Tuple[str, Optional[str]]]
+    ) -> QueryBuilder:
+        res = Query.from_(view)
         for field, keyword in filters:
             if keyword is None:
                 res = res.where(Field(field).isnull())
             else:
                 res = res.where(Field(field) == keyword)
         res = res.select("*")
+        return res
+
+    def filter_exact(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
+        res = self._filter_exact(self.view, filters)
+
         return Sheet(res, self)
 
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
@@ -133,7 +140,11 @@ class Sheet:
     def run_op(
         self,
         operation: Union[
-            "Operation", "FreqOperation", "FilterOperation", "PivotOperation"
+            "Operation",
+            "FreqOperation",
+            "FilterOperation",
+            "PivotOperation",
+            "FacetOperation",
         ],
     ) -> "Sheet":
 
@@ -150,6 +161,9 @@ class Sheet:
             return self.pivot(
                 operation.key_cols, operation.pivot_col, operation.agg_col
             )
+
+        if isinstance(operation, FacetOperation):
+            return self.facet_search(filters=operation.facets)
 
         op = operation.operation_type
         params = operation.params
@@ -171,13 +185,24 @@ class FreqSheet(Sheet):
         self, view: QueryBuilder, key_cols: List[str], source: "Sheet"
     ):
         super().__init__(view, source)
-        self.source = source
+        self.source: Sheet = source
         self.key_cols = key_cols
+
+    def facet_search(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
+        return self.source.filter_exact(filters)
 
     def filter_exact(
         self, filters: List[Tuple[str, Optional[str]]]
     ) -> "Sheet":
-        return self.source.filter_exact(filters)
+        """
+        If a filter op is performed on a FreqSheet, it returns another
+        FreqSheet with the same `source` and `key_cols`
+        """
+
+        res = self._filter_exact(self.view, filters)
+        return FreqSheet(res, key_cols=self.key_cols, source=self.source)
 
     @property
     def key_col_idx(self) -> List[int]:
@@ -185,6 +210,9 @@ class FreqSheet(Sheet):
 
 
 class FreqOperation(BaseModel):
+    # WARNING: pydantic isn't pattern matching on the value of
+    # `operation_type`. Instead its matching on the attributes
+    # `operation_type` and `cols`
     operation_type: str = "f"
     cols: List[str]
 
@@ -192,6 +220,11 @@ class FreqOperation(BaseModel):
 class FilterOperation(BaseModel):
     operation_type: str = "fil"
     filters: List[Tuple[str, Optional[str]]]
+
+
+class FacetOperation(BaseModel):
+    operation_type: str = "fac"
+    facets: List[Tuple[str, Optional[str]]]
 
 
 class PivotOperation(BaseModel):
@@ -232,7 +265,11 @@ def index():
 def post_view(
     uid: str,
     operation: Union[
-        Operation, FreqOperation, FilterOperation, PivotOperation
+        Operation,
+        FreqOperation,
+        FilterOperation,
+        PivotOperation,
+        FacetOperation,
     ],
 ):
     prev_sheet = sheets[uid]

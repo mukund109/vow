@@ -146,7 +146,6 @@ document.addEventListener('alpine:init', () => {
 
     '@keydown.f.window'() {
       if (this.$event.shiftKey) {
-        console.log("pressed shift-F");
         return
       }
       const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
@@ -203,7 +202,7 @@ document.addEventListener('alpine:init', () => {
         cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
       ])
 
-      this.performOp("fil", { 'filters': filters });
+      this.performOp("fac", { 'facets': filters });
     }
   }));
 

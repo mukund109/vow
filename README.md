@@ -1,9 +1,7 @@
 where was i
-* BUG: freq of freq - "num_rows" isn't a column
-  * freq1 > freq2 > enter takes you back to original sheet instead of freq1 sheet
+* BUG: freq of freq - "num_rows" duplicate name
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
-* get as far as possible can with server-side
 * sort indicator
 * arrow key navigation
 * shortcuts for opening study-metadata, sample-metadata
@@ -15,6 +13,7 @@ where was i
 * some kind of pagination
 
 * re-write frontend in Elm in July?
+* get as far as possible can with server-side
 
 display message if server responds with 400 code on POST request
 example of message - "pivot column needs to have less than X values"
