@@ -1,6 +1,4 @@
 where was i
-* loading screen
-* show alert on server response
 * BUG: freq of freq - "num_rows" isn't a column
   * freq1 > freq2 > enter takes you back to original sheet instead of freq1 sheet
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76

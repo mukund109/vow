@@ -5,29 +5,33 @@ document.addEventListener('alpine:init', () => {
     // strip out '/' from the url
     let path = window.location.pathname.replace('\/', '');
 
-    fetch(`/sheets/${path}`, {
+    return fetch(`/sheets/${path}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: {
         'Content-Type': 'application/json'
       },
-    }).then(response => {
-        if (response.status == 400){
-          // alert the user if response is 400
-          response.json().then(data => {
-            alert(data.detail)
-          })
-        }
-        else{
-          response.json().then(data => {
-            console.log(data);
-            if (data.new_sheet != undefined) {
-              window.location.href = new URL(data.new_sheet, window.location.origin)
-            }
-          });
-        }
-      });
+    })
   }
+
+  function openSheet(sheet_id) {
+    // opens new url corresponding to given sheet_id
+    window.location.href = new URL(sheet_id, window.location.origin)
+  }
+
+  Alpine.data('sheet_parent', () => ({ loading: false }))
+  Alpine.bind('sheet_parent_bind', () => ({
+    ':class'() {
+      // when loading, makes table grey
+      return this.loading ? 'loading-table' : ''
+    }
+  }))
+  Alpine.bind('progress', () => ({
+    ':class'() {
+      // when not loading, hides the progress bar
+      return { 'hidden' : !this.loading }
+    }
+  }))
 
   Alpine.data('sheet', (num_rows, num_cols) => ({
     rowidx: 0,
@@ -36,8 +40,29 @@ document.addEventListener('alpine:init', () => {
     agg_col: undefined,
 
     performOp(op, args) {
+      // set `loading` to true before sending post request
+      this.loading = true;
+
       let data = { operation_type: op, ...args };
-      sendPostRequest(data);
+      const promise = sendPostRequest(data);
+
+      promise.then(response => {
+        // alert the user if response is 400
+        if (response.status == 400){
+          response.json().then(body => {
+            this.loading = false
+            alert(body.detail)
+          })
+        }
+        else{
+          response.json().then(body => {
+            console.log(body);
+            if (body.new_sheet != undefined) {
+              openSheet(body.new_sheet)
+            }
+          });
+        }
+      });
     },
 
     update_rowid(delta) {

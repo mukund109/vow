@@ -9,6 +9,10 @@
   padding: 0.4rem 0.4rem;
 }
 
+.loading-table {
+  color: grey;
+}
+
 .active td {
   background: {{ '#eef0f3' if sheet.typ == 'freq' else '#eff3ee' }};
 }
@@ -33,41 +37,53 @@ td.selected-cell {
   color: #c42b2b;
 }
 
+.hidden {
+  visibility: hidden;
+}
+
+.progress:indeterminate {
+  background-image: linear-gradient(to right, grey 30%, rgb(238, 240, 243) 30%);
+}
+
 </style>
 
-<table class="table table-scroll"
-  x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }})"
-  x-bind="
-  {% if sheet.typ == 'freq' %}
-  {{ sheet.typ }}_sheet({{ sheet.key_col_idx }})
-  {% else %}
-  {{ sheet.typ }}_sheet()
-  {% endif %}
-  ">
-    <tr>
+<div x-data="sheet_parent()" x-bind="sheet_parent_bind()">
+  <progress class="hidden progress" x-bind="progress()" max="100">
+  </progress>
+  <table class="table table-scroll"
+    x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }})"
+    x-bind="
+    {% if sheet.typ == 'freq' %}
+    {{ sheet.typ }}_sheet({{ sheet.key_col_idx }})
+    {% else %}
+    {{ sheet.typ }}_sheet()
+    {% endif %}
+    ">
+      <tr>
+        {% for col in sheet.columns %}
+        <th x-ref="col-{{ loop.index0 }}" x-bind="col({{ loop.index0 }})">{{ col }}</th>
+        {% endfor %}
+      </tr>
+    {% for row in sheet.rows %}
+    {% set outerloop = loop %}
+    <tr x-bind="row({{ loop.index0 }})">
       {% for col in sheet.columns %}
-      <th x-ref="col-{{ loop.index0 }}" x-bind="col({{ loop.index0 }})">{{ col }}</th>
+      <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
+          x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
+          class="
+          {% if row[loop.index0] is none %}
+          null
+          {% endif %}
+          ">
+        {% if row[loop.index0] is none %}
+          NaN
+        {% else %}
+        {{ row[loop.index0] }}
+        {% endif %}
+      </td>
       {% endfor %}
     </tr>
-  {% for row in sheet.rows %}
-  {% set outerloop = loop %}
-  <tr x-bind="row({{ loop.index0 }})">
-    {% for col in sheet.columns %}
-    <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
-        x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
-        class="
-        {% if row[loop.index0] is none %}
-        null
-        {% endif %}
-        ">
-      {% if row[loop.index0] is none %}
-        NaN
-      {% else %}
-      {{ row[loop.index0] }}
-      {% endif %}
-    </td>
-    {% endfor %}
-  </tr>
-    {% endfor %}
-</table>
+      {% endfor %}
+  </table>
+</div>
 {% endblock %}
