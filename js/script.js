@@ -32,15 +32,22 @@ document.addEventListener('alpine:init', () => {
       headers: {
         'Content-Type': 'application/json'
       },
-    }).then(res => {
-      console.log(res);
-      res.json().then(data => {
-        console.log(data);
-        if (data.new_sheet != undefined) {
-          window.location.href = new URL(data.new_sheet, window.location.origin)
+    }).then(response => {
+        if (response.status == 400){
+          // alert the user if response is 400
+          response.json().then(data => {
+            alert(data.detail)
+          })
+        }
+        else{
+          response.json().then(data => {
+            console.log(data);
+            if (data.new_sheet != undefined) {
+              window.location.href = new URL(data.new_sheet, window.location.origin)
+            }
+          });
         }
       });
-    });
   }
 
   Alpine.data('sheet', (num_rows, num_cols) => ({
