@@ -45,6 +45,10 @@ td.selected-cell {
   background-image: linear-gradient(to right, grey 30%, rgb(238, 240, 243) 30%);
 }
 
+.sorted-col {
+  background-color: #ededec;
+}
+
 </style>
 
 <div x-data="sheet_parent()" x-bind="sheet_parent_bind()">
@@ -61,7 +65,19 @@ td.selected-cell {
     ">
       <tr>
         {% for col in sheet.columns %}
-        <th x-ref="col-{{ loop.index0 }}" x-bind="col({{ loop.index0 }})">{{ col }}</th>
+        <th
+          x-ref="col-{{ loop.index0 }}"
+          x-bind="col({{ loop.index0 }})"
+          class="{{ 'sorted-col' if col in sheet.orderbys else '' }}"
+          data-colname="{{ col }}"
+          >
+        {{ col }}
+          {% if col in sheet.orderbys %}
+          <span class="arrow">
+            {{ '↑' if sheet.orderbys[col] else '↓' }}
+          </span>
+          {% endif %}
+        </th>
         {% endfor %}
       </tr>
     {% for row in sheet.rows %}

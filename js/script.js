@@ -140,7 +140,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     '@keydown.shift.f.window'() {
-      const col_name = this.$refs[`col-${this.colidx}`].innerText;
+      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
       this.performOp("f", {'cols': [col_name]});
     },
 
@@ -148,7 +148,7 @@ document.addEventListener('alpine:init', () => {
       if (this.$event.shiftKey) {
         return
       }
-      const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
+      const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
       this.performOp("f", {'cols': col_names});
     },
 
@@ -159,20 +159,20 @@ document.addEventListener('alpine:init', () => {
         return
       }
       // this logic is repeating
-      const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
-      const pivot_col = this.$refs[`col-${this.colidx}`].innerText;
-      const agg_col = this.$refs[`col-${this.agg_col}`].innerText;
+      const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
+      const pivot_col = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      const agg_col = this.$refs[`col-${this.agg_col}`].getAttribute("data-colname");
       this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
     },
 
     "@keydown.window"() {
-      const col_name = this.$refs[`col-${this.colidx}`].innerText;
+      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
       if (this.$event.ctrlKey) {
         return
       }
-      if (this.$event.key == ']') {
+      if (this.$event.key == '[') {
         this.performOp('sa', { 'params': col_name });
-      } else if (this.$event.key == '[') {
+      } else if (this.$event.key == ']') {
         this.performOp('sd', { 'params': col_name });
       }
     }
@@ -198,7 +198,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       const filters = key_cols.map(j => [
-        this.$refs[`col-${j}`].innerText,
+        this.$refs[`col-${j}`].getAttribute("data-colname"),
         cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
       ])
 

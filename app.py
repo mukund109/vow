@@ -55,9 +55,10 @@ class Sheet:
         self.uid = next(unique_sequence)
         self.source = source
 
-        self.orderbys = [
-            (field.name, order) for field, order in self.view._orderbys
-        ]
+        self.orderbys = {
+            field.name: (order == Order.asc)
+            for field, order in self.view._orderbys
+        }
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
@@ -68,7 +69,14 @@ class Sheet:
                 *cols,
                 Count("*").as_("num_rows"),
             )
-            .orderby(Count("*"), order=Order.desc)
+        )
+        # Instead of making the `orderby` clause part of the previous query
+        # I'm putting the clause in a new query below
+        # By doing I can use "num_rows" as the field to sort on, and can access
+        # it from self.orderbys
+        # TODO: make a test case for this
+        res = (
+            Query.from_(res).select("*").orderby("num_rows", order=Order.desc)
         )
         return FreqSheet(res, key_cols=cols, source=self)
 
