@@ -130,7 +130,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     '@keydown.shift.f.window'() {
-      col_name = this.$refs[`col-${this.colidx}`].innerText;
+      const col_name = this.$refs[`col-${this.colidx}`].innerText;
       performFreqOp([col_name]);
     },
 
@@ -139,7 +139,7 @@ document.addEventListener('alpine:init', () => {
         console.log("pressed shift-F");
         return
       }
-      col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
+      const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
       performFreqOp(col_names);
     },
 
@@ -150,14 +150,14 @@ document.addEventListener('alpine:init', () => {
         return
       }
       // this logic is repeating
-      key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
-      pivot_col = this.$refs[`col-${this.colidx}`].innerText;
-      agg_col = this.$refs[`col-${this.agg_col}`].innerText;
+      const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].innerText);
+      const pivot_col = this.$refs[`col-${this.colidx}`].innerText;
+      const agg_col = this.$refs[`col-${this.agg_col}`].innerText;
       performPivotOp(key_col_names, pivot_col, agg_col);
     },
 
     "@keydown.window"() {
-      col_name = this.$refs[`col-${this.colidx}`].innerText;
+      const col_name = this.$refs[`col-${this.colidx}`].innerText;
       if (this.$event.key == '[') {
         performOp('sa', col_name);
       } else if (this.$event.key == ']') {
