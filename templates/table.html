@@ -53,8 +53,24 @@ td.selected-cell {
   background-color: #ededec;
 }
 
+li.breadcrumb-item a {
+  color: grey;
+}
+
 </style>
 
+<div>
+  <ul class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="#">tables</a>
+    </li>
+    {% for parent in sheet.lineage %}
+    <li class="breadcrumb-item">
+      <a href="/{{ parent.uid }}">{{ parent }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 <div x-data="sheet_parent()" x-bind="sheet_parent_bind()">
   <progress class="hidden progress" x-bind="progress()" max="100">
   </progress>

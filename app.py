@@ -48,17 +48,44 @@ def _run_query(view: QueryBuilder, max_rows=40) -> Tuple[List, List]:
 
 
 class Sheet:
-    def __init__(self, view: QueryBuilder, source: Optional["Sheet"]):
+    def __init__(
+        self,
+        view: QueryBuilder,
+        source: Optional["Sheet"],
+        desc: Optional[str] = None,
+    ):
         # TODO: source is different for different types of sheets
         self.view = view
         self.rows, self.columns = _run_query(self.view)
         self.uid = next(unique_sequence)
         self.source = source
 
+        # short description of operation performed on source to get this sheet
+        self.desc = desc
+
         self.orderbys = {
             field.name: (order == Order.asc)
             for field, order in self.view._orderbys
         }
+
+    @property
+    def lineage(self) -> List["Sheet"]:
+        """
+        List of parent sheets + this sheet
+        """
+        if self.source is None:
+            return [self]
+        return self.source.lineage + [self]
+
+    def __str__(self):
+        if self.source is None and self.desc is None:
+            return f"{self.uid}"
+        if self.source is not None and self.desc is None:
+            return f"{self.source}[{self.uid}]"
+        if self.source is None and self.desc is not None:
+            return f"{self.desc}"
+        else:
+            return f"{self.source}[{self.desc}]"
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
@@ -78,7 +105,7 @@ class Sheet:
         res = (
             Query.from_(res).select("*").orderby("num_rows", order=Order.desc)
         )
-        return FreqSheet(res, key_cols=cols, source=self)
+        return FreqSheet(res, key_cols=cols, source=self, desc="freq")
 
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
@@ -104,7 +131,7 @@ class Sheet:
     ) -> "Sheet":
         res = self._filter_exact(self.view, filters)
 
-        return Sheet(res, self)
+        return Sheet(res, self, desc="fil")
 
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
         """
@@ -136,7 +163,7 @@ class Sheet:
         res = (
             Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
         )
-        return Sheet(res, self)
+        return Sheet(res, self, desc="piv")
 
     @property
     def typ(self):
@@ -190,9 +217,13 @@ class Sheet:
 
 class FreqSheet(Sheet):
     def __init__(
-        self, view: QueryBuilder, key_cols: List[str], source: "Sheet"
+        self,
+        view: QueryBuilder,
+        key_cols: List[str],
+        source: "Sheet",
+        **kwargs,
     ):
-        super().__init__(view, source)
+        super().__init__(view, source, **kwargs)
         self.source: Sheet = source
         self.key_cols = key_cols
 
@@ -214,7 +245,9 @@ class FreqSheet(Sheet):
         """
 
         res = self._filter_exact(self.view, filters)
-        return FreqSheet(res, key_cols=self.key_cols, source=self.source)
+        return FreqSheet(
+            res, key_cols=self.key_cols, source=self.source, desc="ffil"
+        )
 
     @property
     def key_col_indices(self) -> List[int]:
@@ -263,7 +296,7 @@ def _initialize_view(table: str) -> QueryBuilder:
 
 
 if "gta" not in sheets:
-    sheets["gta"] = Sheet(_initialize_view("test_2"), None)
+    sheets["gta"] = Sheet(_initialize_view("test_2"), None, desc="gta")
 
 
 @app.get("/")
