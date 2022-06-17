@@ -20,12 +20,15 @@
     body {
       color: #000;
       font-family: 'Roboto Mono', monospace;
-      width: 1300px;
-      margin: 20px auto;
+      width: 1600px;
+      margin: 10px auto;
       height: 100%
     }
 
-    div {}
+    div {
+      padding: 0px
+      margin: 0px auto;
+    }
 
     .htmx-indicator {
       display: none;
@@ -38,7 +41,6 @@
 </head>
 
 <body>
-  <h4>{{ msg }}</h4>
   {% block table %}
   {% endblock %}
 </body>
