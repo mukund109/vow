@@ -2,15 +2,24 @@ where was i
 * BUG: freq of freq - "num_rows" duplicate name
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
-* sort indicator
 * arrow key navigation
 * shortcuts for opening study-metadata, sample-metadata
 * doc-sidebar
 * links to previous sheets
   * list of previous sheets should not change on sort
   * browser history can still change
-* mouse - highlight on hover
 * some kind of pagination
+
+* filter based on selection and regex
+* hide columns
+* insert values
+* col dtypes
+* histogram bars
+* remember last active cell in table
+* column summary info
+* left,right hover-on-scroll div
+* column hover - buttons and [shortcut], and "help"
+* all "help" should link to command palette
 
 * re-write frontend in Elm in July?
 * get as far as possible can with server-side
@@ -35,6 +44,8 @@ operations todo
 * show keypress hints (for available ops)
 * on pressing and holding just Shift, it shows which aggregation functions are applied to which columns
 
+# big things
+make this run in browser with pyiodide and wasm
 
 # potential bugs
 rename columns

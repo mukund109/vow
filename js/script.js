@@ -239,7 +239,14 @@ document.addEventListener('alpine:init', () => {
           inline: 'nearest'
         })
       }
+    },
+
+    '@mouseover'() {
+      this.rowidx = i
+      this.colidx = j
     }
+
+
   }));
 
 });
