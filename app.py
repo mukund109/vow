@@ -199,6 +199,10 @@ class FreqSheet(Sheet):
     def facet_search(
         self, filters: List[Tuple[str, Optional[str]]]
     ) -> "Sheet":
+        """
+        A facet search is just the behaviour that happens
+        when you press 'Enter' on a row (facet) of a frequency sheet
+        """
         return self.source.filter_exact(filters)
 
     def filter_exact(
@@ -213,7 +217,7 @@ class FreqSheet(Sheet):
         return FreqSheet(res, key_cols=self.key_cols, source=self.source)
 
     @property
-    def key_col_idx(self) -> List[int]:
+    def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
 
 
