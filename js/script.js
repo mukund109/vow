@@ -38,7 +38,7 @@ document.addEventListener('alpine:init', () => {
     colidx: 0,
     key_cols: [], // contains indices
     filter_vals: {}, // contains { column_index: [val1, val2], ... }
-    // hidden_cols: new Set(), // contains indices if hidden columns
+    hidden_cols: new Set(), // contains indices if hidden columns
     agg_col: undefined,
 
     performOp(op, args) {
@@ -114,7 +114,34 @@ document.addEventListener('alpine:init', () => {
       } else {
         this.filter_vals[colidx] = new Set([value])
       }
-    }
+    },
+
+    toggle_hidden_col() {
+      if (this.hidden_cols.has(this.colidx)) {
+        this.hidden_cols.delete(this.colidx)
+      } else {
+        this.hidden_cols.add(this.colidx)
+      }
+    },
+
+    get_visible_col_names() {
+      const nodelist = document.querySelectorAll("table th");
+      const colnames = Array.from(nodelist).map(node => node.getAttribute("data-colname"))
+      return colnames.filter((_, i) => !this.hidden_cols.has(i))
+    },
+
+    update_colid_to_next_visible() {
+      // gets indices of all visible columns
+      const visible_col_indices = [...Array(num_cols).keys()].filter(i => !this.hidden_cols.has(i))
+
+      // [(index, distance from active col), ...]
+      // the 0.5 gives right columns preference
+      const deltas = visible_col_indices.map(i => [i, Math.abs(i - this.colidx - 0.5)]).sort((a, b) => a[1] - b[1])
+
+      if (deltas.length != 0) {
+        this.colidx = deltas[0][0]
+      }
+    },
 
   }));
 
@@ -161,6 +188,15 @@ document.addEventListener('alpine:init', () => {
       this.toggle_agg_col(this.colidx);
     },
 
+    '@keydown.,.window'() {
+      this.toggle_filter_vals()
+    },
+
+    '@keydown.-.window'() {
+      this.toggle_hidden_col()
+      this.update_colid_to_next_visible()
+    },
+
     '@keydown.shift.f.window'() {
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
       this.performOp("f", {'cols': [col_name]});
@@ -187,21 +223,19 @@ document.addEventListener('alpine:init', () => {
       this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
     },
 
-    '@keydown.,.window'() {
-      this.toggle_filter_vals()
-    },
-
     '@keydown.".window'() {
       // filter
       const filters = [] // [(col, val), ...]
+      const cols_to_return = this.get_visible_col_names()
+
       for (const colidx in this.filter_vals) {
         this.filter_vals[colidx].forEach(value => filters.push([this.$refs[`col-${colidx}`].getAttribute("data-colname"), value]))
       }
-      if (filters.length == 0) {
-        alert("pick some values to filter on")
+      if (filters.length == 0 && this.hidden_cols.size == 0) {
+        alert("pick some values or columns to filter on")
         return
       }
-      this.performOp("fil", {'filters': filters, criterion: "any"});
+      this.performOp("fil", {'filters': filters, 'columns_to_return': cols_to_return, criterion: "any"});
     },
 
     "@keydown.window"() {
@@ -273,7 +307,8 @@ document.addEventListener('alpine:init', () => {
       return {
         'active': (this.colidx == j),
         'key-col': this.key_cols.includes(j),
-        'agg-col': this.agg_col == j
+        'agg-col': this.agg_col == j,
+        'hidden-col': this.hidden_cols.has(j),
       }
     }
 
@@ -285,6 +320,7 @@ document.addEventListener('alpine:init', () => {
         'filtered-val': (j in this.filter_vals) && (this.filter_vals[j].has(cellToVal(this.$refs[`cell-${i}-${j}`]))),
         'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'selected-col': (this.colidx == j),
+        'hidden-cell': this.hidden_cols.has(j),
       }
     },
 

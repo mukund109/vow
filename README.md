@@ -1,5 +1,7 @@
 where was i
+* BUG: filtering on NA doesn't work
 * BUG: freq of freq - "num_rows" duplicate name
+* low priority: can hidden cols be key cols? shouldn't matter
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
 * arrow key navigation
@@ -10,12 +12,13 @@ where was i
   * browser history can still change
 * some kind of pagination
 
-* filter based on selection and regex
-* hide columns
+* filter based on regex
+* changing order of cols
+  * are these preserved when sharing sheet?
+* remember last active cell in table
 * insert values
 * col dtypes
 * histogram bars
-* remember last active cell in table
 * column summary info
 * left,right hover-on-scroll div
 * column hover - buttons and [shortcut], and "help"

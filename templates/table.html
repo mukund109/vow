@@ -2,6 +2,10 @@
 {% block table %}
 
 <style>
+table {
+  width: 100%;
+}
+
 .table th {
   border-bottom: 0.2rem solid {{ '#0f057b' if sheet.typ == 'freq' else '#00511c' }};
 }
@@ -14,11 +18,30 @@
 }
 
 .filtered-val {
-  color: #4e1491;
+  color: #604d02;
 }
 
 .filtered td {
   color: #bcbcbc;
+}
+
+.null {
+  color: #c42b2b;
+}
+
+th.hidden-col {
+  color: #bcbcbc00;
+  background: #98ad34;
+  overflow: hidden;
+  width: 15px;
+  max-width: 15px;
+}
+
+.hidden-cell {
+  color: #bcbcbc00;
+  overflow: hidden;
+  width: 0px;
+  max-width: 0px;
 }
 
 .active td {
@@ -39,10 +62,6 @@ th.agg-col {
 
 td.selected-cell {
   background: {{ '#d4ddf7' if sheet.typ == 'freq' else '#b7c8b5' }};
-}
-
-.null {
-  color: #c42b2b;
 }
 
 .hidden {

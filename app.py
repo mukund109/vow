@@ -42,7 +42,15 @@ def _run_query(view: QueryBuilder, max_rows=40) -> Tuple[List, List]:
     except RuntimeError as e:
         print(sql_query)
         raise e
-    rows = conn.fetchall()
+
+    try:
+        rows = conn.fetchall()
+    except RuntimeError as e:
+        if e.args[0] == "no open result set":
+            return [], []
+        else:
+            raise e
+
     columns = [col[0] for col in conn.description]
     return rows, columns
 
@@ -115,7 +123,10 @@ class Sheet:
         return Sheet(res, self.source)
 
     def _filter_exact(
-        self, view, filters: List[Tuple[str, Optional[str]]]
+        self,
+        view,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> QueryBuilder:
         res = Query.from_(view)
         for field, keyword in filters:
@@ -123,18 +134,27 @@ class Sheet:
                 res = res.where(Field(field).isnull())
             else:
                 res = res.where(Field(field) == keyword)
-        res = res.select("*")
+
+        if cols_to_return is None:
+            return res.select("*")
+
+        res = res.select(*[Field(col) for col in cols_to_return])
         return res
 
     def filter_exact(
-        self, filters: List[Tuple[str, Optional[str]]]
+        self,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> "Sheet":
-        res = self._filter_exact(self.view, filters)
+        res = self._filter_exact(self.view, filters, cols_to_return)
 
         return Sheet(res, self, desc="fil")
 
     def _filter_except(
-        self, view, filters: List[Tuple[str, Optional[str]]]
+        self,
+        view,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> QueryBuilder:
         """
         Filters out all values except those that match `filters`
@@ -143,12 +163,22 @@ class Sheet:
         criterion = Criterion.any(
             [Field(field) == keyword for field, keyword in filters]
         )
-        return Query.from_(view).where(criterion).select("*")
+        res = Query.from_(view).where(criterion)
+
+        if cols_to_return is None:
+            return res.select("*")
+
+        return res.select(*[Field(col) for col in cols_to_return])
 
     def filter_except(
-        self, filters: List[Tuple[str, Optional[str]]]
+        self,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> "Sheet":
-        res = self._filter_except(self.view, filters)
+        """
+        if cols_to_return is None, then return all columns
+        """
+        res = self._filter_except(self.view, filters, cols_to_return)
         return Sheet(res, self, desc="fil2")
 
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
@@ -207,10 +237,16 @@ class Sheet:
 
         if isinstance(operation, FilterOperation):
             filters = operation.filters
+            cols_to_return = operation.columns_to_return
+
             if operation.criterion == "all":
-                res = self.filter_exact(filters=filters)
+                res = self.filter_exact(
+                    filters=filters, cols_to_return=cols_to_return
+                )
             else:
-                res = self.filter_except(filters=filters)
+                res = self.filter_except(
+                    filters=filters, cols_to_return=cols_to_return
+                )
             return res
 
         if isinstance(operation, PivotOperation):
@@ -248,6 +284,17 @@ class FreqSheet(Sheet):
         self.source: Sheet = source
         self.key_cols = key_cols
 
+    def check_for_key_cols(self, cols: List[str]):
+        """
+        checks whether `cols` contains all the self.key_cols
+        """
+        for col in self.key_cols:
+            if col not in cols:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot hide key columns: {self.key_cols}",
+                )
+
     def facet_search(
         self, filters: List[Tuple[str, Optional[str]]]
     ) -> "Sheet":
@@ -255,29 +302,35 @@ class FreqSheet(Sheet):
         A facet search is just the behaviour that happens
         when you press 'Enter' on a row (facet) of a frequency sheet
         """
-        return self.source.filter_exact(filters)
+        return self.source.filter_exact(filters, cols_to_return=None)
 
     def filter_exact(
-        self, filters: List[Tuple[str, Optional[str]]]
+        self,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> "Sheet":
         """
         If a filter op is performed on a FreqSheet, it returns another
         FreqSheet with the same `source` and `key_cols`
         """
 
-        res = self._filter_exact(self.view, filters)
+        self.check_for_key_cols(cols_to_return)
+        res = self._filter_exact(self.view, filters, cols_to_return)
         return FreqSheet(
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
     def filter_except(
-        self, filters: List[Tuple[str, Optional[str]]]
+        self,
+        filters: List[Tuple[str, Optional[str]]],
+        cols_to_return: Optional[List[str]],
     ) -> "Sheet":
         """
         same as docs of `FreqSheet.filter_exact`
         """
 
-        res = self._filter_except(self.view, filters)
+        self.check_for_key_cols(cols_to_return)
+        res = self._filter_except(self.view, filters, cols_to_return)
         return FreqSheet(
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
@@ -299,6 +352,7 @@ class FreqOperation(BaseModel):
 class FilterOperation(BaseModel):
     operation_type: str = "fil"
     filters: List[Tuple[str, Optional[str]]]
+    columns_to_return: Optional[List[str]] = None
     criterion: Literal["any", "all"] = "all"
 
 
