@@ -36,7 +36,8 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('sheet', (num_rows, num_cols) => ({
     rowidx: 0,
     colidx: 0,
-    key_cols: [],
+    key_cols: [], // contains indices
+    filter_vals: {}, // contains { column_index: value, ... }
     agg_col: undefined,
 
     performOp(op, args) {
@@ -165,6 +166,39 @@ document.addEventListener('alpine:init', () => {
       this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
     },
 
+    '@keydown.,.window'() {
+      const value = cellToVal(this.$refs[`cell-${this.rowidx}-${this.colidx}`])
+      const colidx = this.colidx
+
+      // toggles the presence of (colidx, value) in filter_vals
+      if (colidx in this.filter_vals) {
+        const vals = this.filter_vals[colidx]
+        if (vals.has(value)){
+          vals.delete(value)
+          if (vals.size == 0) {
+            delete this.filter_vals[colidx]
+          }
+        } else {
+          vals.add(value)
+        }
+      } else {
+        this.filter_vals[colidx] = new Set([value])
+      }
+    },
+
+    '@keydown.".window'() {
+      // filter
+      const filters = [] // [(col, val), ...]
+      for (const colidx in this.filter_vals) {
+        this.filter_vals[colidx].forEach(value => filters.push([this.$refs[`col-${colidx}`].getAttribute("data-colname"), value]))
+      }
+      if (filters.length == 0) {
+        alert("pick some values to filter on")
+        return
+      }
+      this.performOp("fil", {'filters': filters, criterion: "any"});
+    },
+
     "@keydown.window"() {
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
       if (this.$event.ctrlKey) {
@@ -182,21 +216,21 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings()
   }));
 
+  function cellToVal(cell_el) {
+    // check if cell is NULL or an empty string
+    if (cell_el.classList.contains("null")) {
+      return null
+    } else {
+      return cell_el.innerText;
+    }
+  }
+
   Alpine.bind('freq_sheet', (key_cols) => ({
     ...base_bindings(),
 
     '@keydown.enter.window'() {
 
       // key_cols is a list of column indices
-      function cellToVal(cell_el) {
-        // check if cell is NULL or an empty string
-        if (cell_el.classList.contains("null")) {
-          return null
-        } else {
-          return cell_el.innerText;
-        }
-      }
-
       const filters = key_cols.map(j => [
         this.$refs[`col-${j}`].getAttribute("data-colname"),
         cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
@@ -206,11 +240,27 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 
-  Alpine.bind('row', (idx) => ({
-    ':class'() {
-      return this.rowidx == idx ? 'active' : ''
+  function isFiltered(row_el, filter_vals) {
+    // if `filter_vals` is empty return false
+    if (Object.keys(filter_vals).length == 0) {
+      return false
     }
 
+    for (var j = 0, cell; cell = row_el.cells[j]; j++) {
+      if (j in filter_vals && filter_vals[j].has(cellToVal(cell))) {
+        return false
+      }
+    }
+    return true
+  }
+
+  Alpine.bind('row', (idx) => ({
+    ':class'() {
+      return {
+        'active': this.rowidx == idx,
+        'filtered': isFiltered(this.$refs[`row-${idx}`], this.filter_vals),
+      }
+    }
   }));
 
   Alpine.bind('col', (j) => ({
@@ -227,6 +277,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.bind('cell', (i, j) => ({
     ':class'() {
       return {
+        'filtered-val': (j in this.filter_vals) && (this.filter_vals[j].has(cellToVal(this.$refs[`cell-${i}-${j}`]))),
         'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'selected-col': (this.colidx == j),
       }
@@ -244,8 +295,7 @@ document.addEventListener('alpine:init', () => {
     '@mouseover'() {
       this.rowidx = i
       this.colidx = j
-    }
-
+    },
 
   }));
 

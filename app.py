@@ -3,8 +3,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import random
 import duckdb
-from typing import Dict, List, Optional, Union, Tuple
-from pypika import Table, Query, Field, Case
+from typing import Dict, List, Optional, Union, Tuple, Literal
+from pypika import Table, Query, Field, Case, Criterion
 from pypika.enums import Order
 from pypika.queries import QueryBuilder
 from pypika.functions import Count, First, Max
@@ -133,6 +133,24 @@ class Sheet:
 
         return Sheet(res, self, desc="fil")
 
+    def _filter_except(
+        self, view, filters: List[Tuple[str, Optional[str]]]
+    ) -> QueryBuilder:
+        """
+        Filters out all values except those that match `filters`
+        This is like combining the filters with an OR condition
+        """
+        criterion = Criterion.any(
+            [Field(field) == keyword for field, keyword in filters]
+        )
+        return Query.from_(view).where(criterion).select("*")
+
+    def filter_except(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
+        res = self._filter_except(self.view, filters)
+        return Sheet(res, self, desc="fil2")
+
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
         """
         aggs: (field, aggfunction)
@@ -189,7 +207,10 @@ class Sheet:
 
         if isinstance(operation, FilterOperation):
             filters = operation.filters
-            res = self.filter_exact(filters=filters)
+            if operation.criterion == "all":
+                res = self.filter_exact(filters=filters)
+            else:
+                res = self.filter_except(filters=filters)
             return res
 
         if isinstance(operation, PivotOperation):
@@ -249,6 +270,18 @@ class FreqSheet(Sheet):
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
+    def filter_except(
+        self, filters: List[Tuple[str, Optional[str]]]
+    ) -> "Sheet":
+        """
+        same as docs of `FreqSheet.filter_exact`
+        """
+
+        res = self._filter_except(self.view, filters)
+        return FreqSheet(
+            res, key_cols=self.key_cols, source=self.source, desc="ffil"
+        )
+
     @property
     def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
@@ -258,6 +291,7 @@ class FreqOperation(BaseModel):
     # WARNING: pydantic isn't pattern matching on the value of
     # `operation_type`. Instead its matching on the attributes
     # `operation_type` and `cols`
+    # TODO: convert operation type to literal?
     operation_type: str = "f"
     cols: List[str]
 
@@ -265,6 +299,7 @@ class FreqOperation(BaseModel):
 class FilterOperation(BaseModel):
     operation_type: str = "fil"
     filters: List[Tuple[str, Optional[str]]]
+    criterion: Literal["any", "all"] = "all"
 
 
 class FacetOperation(BaseModel):

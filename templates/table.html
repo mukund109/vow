@@ -13,6 +13,14 @@
   color: grey;
 }
 
+.filtered-val {
+  color: #4e1491;
+}
+
+.filtered td {
+  color: #bcbcbc;
+}
+
 .active td {
   background: {{ '#eef0f3' if sheet.typ == 'freq' else '#eff3ee' }};
 }
@@ -102,7 +110,10 @@ li.breadcrumb-item a {
       </tr>
     {% for row in sheet.rows %}
     {% set outerloop = loop %}
-    <tr x-bind="row({{ loop.index0 }})">
+    <tr
+      x-bind="row({{ loop.index0 }})"
+      x-ref="row-{{ outerloop.index0 }}" >
+
       {% for col in sheet.columns %}
       <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
           x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
