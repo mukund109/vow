@@ -37,7 +37,8 @@ document.addEventListener('alpine:init', () => {
     rowidx: 0,
     colidx: 0,
     key_cols: [], // contains indices
-    filter_vals: {}, // contains { column_index: value, ... }
+    filter_vals: {}, // contains { column_index: [val1, val2], ... }
+    // hidden_cols: new Set(), // contains indices if hidden columns
     agg_col: undefined,
 
     performOp(op, args) {
@@ -92,6 +93,26 @@ document.addEventListener('alpine:init', () => {
         this.agg_col = undefined
       } else {
         this.agg_col = colidx
+      }
+    },
+
+    toggle_filter_vals() {
+      const value = cellToVal(this.$refs[`cell-${this.rowidx}-${this.colidx}`])
+      const colidx = this.colidx
+
+      // toggles the presence of (colidx, value) in filter_vals
+      if (colidx in this.filter_vals) {
+        const vals = this.filter_vals[colidx]
+        if (vals.has(value)){
+          vals.delete(value)
+          if (vals.size == 0) {
+            delete this.filter_vals[colidx]
+          }
+        } else {
+          vals.add(value)
+        }
+      } else {
+        this.filter_vals[colidx] = new Set([value])
       }
     }
 
@@ -167,23 +188,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     '@keydown.,.window'() {
-      const value = cellToVal(this.$refs[`cell-${this.rowidx}-${this.colidx}`])
-      const colidx = this.colidx
-
-      // toggles the presence of (colidx, value) in filter_vals
-      if (colidx in this.filter_vals) {
-        const vals = this.filter_vals[colidx]
-        if (vals.has(value)){
-          vals.delete(value)
-          if (vals.size == 0) {
-            delete this.filter_vals[colidx]
-          }
-        } else {
-          vals.add(value)
-        }
-      } else {
-        this.filter_vals[colidx] = new Set([value])
-      }
+      this.toggle_filter_vals()
     },
 
     '@keydown.".window'() {
