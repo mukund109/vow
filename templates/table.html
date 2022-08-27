@@ -22,6 +22,10 @@ tbody {
   color: grey;
 }
 
+[x-cloak] {
+  display: none !important;
+}
+
 .filtered-val {
   color: #604d02;
 }
@@ -103,10 +107,11 @@ li.breadcrumb-item a {
     {% endfor %}
   </ul>
 </div>
-<div x-data="sheet_parent()" x-bind="sheet_parent_bind()">
+<div id="table-parent" x-data="sheet_parent()" x-bind="sheet_parent_bind()">
   <progress class="hidden progress" x-bind="progress()" max="100">
   </progress>
   <table class="table table-scroll"
+    x-cloak
     x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }})"
     x-bind="
     {% if sheet.typ == 'freq' %}
