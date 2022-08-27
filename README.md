@@ -1,4 +1,8 @@
 where was i
+* remember filtered rows
+
+todo
+* refactor - move js logic from Alpine.bind into Alpine.data
 * BUG: filtering on NA doesn't work
 * BUG: freq of freq - "num_rows" duplicate name
 * low priority: can hidden cols be key cols? shouldn't matter
@@ -11,11 +15,15 @@ where was i
   * list of previous sheets should not change on sort
   * browser history can still change
 * some kind of pagination
+* a way to make all columns have the same width, to make them easier to see
+  * sheet should open this way, user can then decide to make col full width
 
 * filter based on regex
 * changing order of cols
   * are these preserved when sharing sheet?
-* remember last active cell in table
+
+* `q` should take back to parent sheet, it should NOT be the same as a back button
+* refactor js code, move operations that read/modify state into `Alpine.data` from `Alpine.bind`
 * insert values
 * col dtypes
 * histogram bars

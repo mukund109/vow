@@ -41,9 +41,41 @@ document.addEventListener('alpine:init', () => {
     hidden_cols: new Set(), // contains indices if hidden columns
     agg_col: undefined,
 
+    saveStateToStorage(key=window.location.pathname) {
+      // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
+      sessionStorage.setItem(
+        key, JSON.stringify(
+          {
+            rowidx: this.rowidx,
+            colidx: this.colidx,
+            hidden_cols: Array.from(this.hidden_cols),
+          })
+      )
+    },
+
+    init() {
+      let state = sessionStorage.getItem(window.location.pathname)
+      if ("last" in sessionStorage) {
+        state = sessionStorage["last"]
+        sessionStorage.removeItem("last")
+      }
+      if (state) {
+        state = JSON.parse(state)
+        this.rowidx = state.rowidx
+        this.colidx = state.colidx
+        this.hidden_cols = new Set(state.hidden_cols)
+      }
+    },
+
     performOp(op, args) {
       // set `loading` to true before sending post request
       this.loading = true;
+      this.saveStateToStorage();
+      // sorting changes the url, but it shouldn't change state
+      // the 'last' key is a way of passing current state to next page
+      if ( op == "sa" || op == "sd" ) {
+        this.saveStateToStorage("last")
+      }
 
       let data = { operation_type: op, ...args };
       const promise = sendPostRequest(data);
@@ -248,7 +280,14 @@ document.addEventListener('alpine:init', () => {
       } else if (this.$event.key == ']') {
         this.performOp('sd', { 'params': col_name });
       }
-    }
+
+    },
+
+    // state is stored on every keydown event
+    // after a delay of 250ms
+    "@keydown.window.debounce"() {
+      this.saveStateToStorage()
+    },
   });
 
   Alpine.bind('base_sheet', () => ({
