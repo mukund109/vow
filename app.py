@@ -431,7 +431,7 @@ def get_sheet_by_uid(request: Request, uid: str):
 
 
 app.mount("/js/", StaticFiles(directory="js"), name="javascript")
-app.mount("/", StaticFiles(directory="static"), name="site")
+app.mount("/static/", StaticFiles(directory="static"), name="site")
 
 if __name__ == "__main__":
     import uvicorn
