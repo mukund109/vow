@@ -77,6 +77,10 @@ td.selected-cell {
   visibility: hidden;
 }
 
+.nodisplay {
+  display: none;
+}
+
 .progress {
   width: 10%;
 }
@@ -93,6 +97,14 @@ li.breadcrumb-item a {
   color: grey;
 }
 
+.mybtn {
+  background-color: white;
+  border: none;
+  color: black;
+  padding: 2px 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
 </style>
 
 <div>
@@ -107,9 +119,11 @@ li.breadcrumb-item a {
     {% endfor %}
   </ul>
 </div>
+
 <div id="table-parent" x-data="sheet_parent()" x-bind="sheet_parent_bind()">
   <progress class="hidden progress" x-bind="progress()" max="100">
   </progress>
+
   <table class="table table-scroll"
     x-cloak
     x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }})"
@@ -136,6 +150,14 @@ li.breadcrumb-item a {
           {% endif %}
         </th>
         {% endfor %}
+      </tr>
+      <tr style="display: none" x-bind="search_row()" x-ref="search-row">
+        <td>
+          <input x-ref="search-input" type="text" placeholder="Search" autofocus>
+          <button class="mybtn">
+            <span>x</span>
+          </button>
+        </td>
       </tr>
     {% for row in sheet.rows %}
     {% set outerloop = loop %}

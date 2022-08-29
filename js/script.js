@@ -19,7 +19,13 @@ document.addEventListener('alpine:init', () => {
     window.location.href = new URL(sheet_id, window.location.origin)
   }
 
-  Alpine.data('sheet_parent', () => ({ loading: false }))
+  Alpine.data('sheet_parent', () => ({
+    loading: false,
+
+    init() {
+      this.loading = false
+    }
+  }))
   Alpine.bind('sheet_parent_bind', () => ({
     ':class'() {
       // when loading, makes table grey
@@ -38,8 +44,9 @@ document.addEventListener('alpine:init', () => {
     colidx: 0,
     key_cols: [], // contains indices
     filter_vals: {}, // contains { column_index: [val1, val2], ... }
-    hidden_cols: new Set(), // contains indices if hidden columns
+    hidden_cols: new Set(), // contains indices of hidden columns
     agg_col: undefined,
+    search_mode: false,
 
     saveStateToStorage(key=window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
@@ -70,7 +77,7 @@ document.addEventListener('alpine:init', () => {
     performOp(op, args) {
       // set `loading` to true before sending post request
       this.loading = true;
-      this.saveStateToStorage();
+
       // sorting changes the url, but it shouldn't change state
       // the 'last' key is a way of passing current state to next page
       if ( op == "sa" || op == "sd" ) {
@@ -92,11 +99,66 @@ document.addEventListener('alpine:init', () => {
           response.json().then(body => {
             console.log(body);
             if (body.new_sheet != undefined) {
+              this.loading = false
               openSheet(body.new_sheet)
             }
           });
         }
       });
+    },
+
+    performFilterOp() {
+      // filter
+      const filters = [] // [(col, val), ...]
+      const cols_to_return = this.get_visible_col_names()
+
+      for (const colidx in this.filter_vals) {
+        this.filter_vals[colidx].forEach(value => filters.push([this.$refs[`col-${colidx}`].getAttribute("data-colname"), value]))
+      }
+      if (filters.length == 0 && this.hidden_cols.size == 0) {
+        alert("pick some values or columns to filter on")
+        return
+      }
+      this.performOp("fil", {'filters': filters, 'columns_to_return': cols_to_return, criterion: "any"});
+    },
+
+    performPivotOp() {
+      if (this.agg_col == undefined) {
+        alert("pick a column to aggregate on")
+        return
+      }
+      // this logic is repeating
+      const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
+      const pivot_col = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      const agg_col = this.$refs[`col-${this.agg_col}`].getAttribute("data-colname");
+      this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
+    },
+
+    performMultiFrequencyOp() {
+      const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
+      this.performOp("f", {'cols': col_names});
+    },
+
+    performFrequencyOp() {
+      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      this.performOp("f", {'cols': [col_name]});
+    },
+
+    performFacetOp(key_cols) {
+
+      // key_cols is a list of column indices
+      const filters = key_cols.map(j => [
+        this.$refs[`col-${j}`].getAttribute("data-colname"),
+        cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
+      ])
+
+      this.performOp("fac", { 'facets': filters });
+    },
+
+    performSortOp(type) {
+      // type is one of 'sa', 'sd'
+      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      this.performOp(type, {'params': col_name })
     },
 
     update_rowid(delta) {
@@ -154,6 +216,7 @@ document.addEventListener('alpine:init', () => {
       } else {
         this.hidden_cols.add(this.colidx)
       }
+      this.update_colid_to_next_visible()
     },
 
     get_visible_col_names() {
@@ -175,113 +238,69 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    enable_search_mode(e) {
+      // prevents the '|' from appearing in input box
+      if (!this.search_mode) {e.preventDefault()}
+      this.search_mode = true;
+      this.$refs['search-row'].style.display = '';
+      this.$refs['search-input'].focus();
+      this.$refs['col-0'].scrollIntoView();
+    },
+
+    disable_search_mode () {
+      this.$refs['search-row'].style.display = 'none';
+      this.search_mode = false;
+      this.$refs[`cell-${this.rowidx}-${this.colidx}`].scrollIntoView()
+    },
+
+    handleKeydown(e) {
+      // console.log(e.key);
+      if (e.ctrlKey) {
+        return
+      }
+      const shift_key_map = {
+        'G': () => {this.update_rowid_to_max()},
+        'F': () => {this.performFrequencyOp()},
+        'W': () => {this.performPivotOp()},
+      }
+      const key_map = {
+        'g': () => {this.update_rowid_to_min()},
+        'f': () => {this.performMultiFrequencyOp()},
+        'j': () => {this.update_rowid(1)},
+        'k': () => {this.update_rowid(-1)},
+        'l': () => {this.update_colid(1)},
+        'h': () => {this.update_colid(-1)},
+        '!': () => {this.toggle_key(this.colidx)},
+        '+': () => {this.toggle_agg_col(this.colidx)},
+        ',': () => {this.toggle_filter_vals()},
+        '-': () => {this.toggle_hidden_col()},
+        '"': () => {this.performFilterOp()},
+        '[': () => {this.performSortOp('sa')},
+        ']': () => {this.performSortOp('sd')},
+        '|': () => {this.enable_search_mode(e)},
+      }
+      const searchmode_key_map = {
+        'Escape': () => {this.disable_search_mode()}
+      }
+      if (this.search_mode) {
+        if (e.key in searchmode_key_map) searchmode_key_map[e.key]();
+        console.log(e.key)
+        return
+      }
+
+      if (e.shiftKey & e.key in shift_key_map) {
+        shift_key_map[e.key]()
+      }
+      else if (e.key in key_map) {
+        key_map[e.key]()
+      }
+    }
+
   }));
 
   let base_bindings = () => ({
 
-    '@keydown.j.window'() {
-      this.update_rowid(1);
-    },
-    '@keydown.shift.down.window'() {
-      this.update_rowid(1);
-    },
-    '@keydown.shift.up.window'() {
-      this.update_rowid(-1);
-    },
-    '@keydown.k.window'() {
-      this.update_rowid(-1);
-    },
-
-    '@keydown.shift.right.window'() {
-      this.update_colid(1);
-    },
-    '@keydown.l.window'() {
-      this.update_colid(1);
-    },
-    '@keydown.shift.left.window'() {
-      this.update_colid(-1);
-    },
-    '@keydown.h.window'() {
-      this.update_colid(-1);
-    },
-
-    '@keydown.shift.g.window'() {
-      this.update_rowid_to_max();
-    },
-    '@keydown.g.window'() {
-      if (!this.$event.shiftKey) this.update_rowid_to_min()
-    },
-
-    '@keydown.!.window'() {
-      this.toggle_key(this.colidx);
-    },
-
-    '@keydown.+.window'() {
-      this.toggle_agg_col(this.colidx);
-    },
-
-    '@keydown.,.window'() {
-      this.toggle_filter_vals()
-    },
-
-    '@keydown.-.window'() {
-      this.toggle_hidden_col()
-      this.update_colid_to_next_visible()
-    },
-
-    '@keydown.shift.f.window'() {
-      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
-      this.performOp("f", {'cols': [col_name]});
-    },
-
-    '@keydown.f.window'() {
-      if (this.$event.shiftKey) {
-        return
-      }
-      const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
-      this.performOp("f", {'cols': col_names});
-    },
-
-    '@keydown.shift.w.window'() {
-
-      if (this.agg_col == undefined) {
-        alert("pick a column to aggregate on")
-        return
-      }
-      // this logic is repeating
-      const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
-      const pivot_col = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
-      const agg_col = this.$refs[`col-${this.agg_col}`].getAttribute("data-colname");
-      this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
-    },
-
-    '@keydown.".window'() {
-      // filter
-      const filters = [] // [(col, val), ...]
-      const cols_to_return = this.get_visible_col_names()
-
-      for (const colidx in this.filter_vals) {
-        this.filter_vals[colidx].forEach(value => filters.push([this.$refs[`col-${colidx}`].getAttribute("data-colname"), value]))
-      }
-      if (filters.length == 0 && this.hidden_cols.size == 0) {
-        alert("pick some values or columns to filter on")
-        return
-      }
-      this.performOp("fil", {'filters': filters, 'columns_to_return': cols_to_return, criterion: "any"});
-    },
-
-    "@keydown.window"() {
-      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
-      if (this.$event.ctrlKey) {
-        return
-      }
-      if (this.$event.key == '[') {
-        this.performOp('sa', { 'params': col_name });
-      } else if (this.$event.key == ']') {
-        this.performOp('sd', { 'params': col_name });
-      }
-
-    },
+    "@keydown.window"(e) {this.handleKeydown(e)},
 
     // state is stored on every keydown event
     // after a delay of 250ms
@@ -307,14 +326,7 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings(),
 
     '@keydown.enter.window'() {
-
-      // key_cols is a list of column indices
-      const filters = key_cols.map(j => [
-        this.$refs[`col-${j}`].getAttribute("data-colname"),
-        cellToVal(this.$refs[`cell-${this.rowidx}-${j}`])
-      ])
-
-      this.performOp("fac", { 'facets': filters });
+      this.performFacetOp(key_cols)
     }
   }));
 
@@ -377,6 +389,14 @@ document.addEventListener('alpine:init', () => {
       this.colidx = j
     },
 
+  }));
+
+  Alpine.bind('search_row', () => ({
+    // ':class'() {
+    //   return {
+    //     'nodisplay': !this.search_mode
+    //   }
+    // }
   }));
 
 });

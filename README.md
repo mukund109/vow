@@ -1,5 +1,7 @@
 where was i
-* remember filtered rows
+* complete regex search functionality
+  * cannot unfocus on search input box using mouse
+  * was adding button to close search input
 
 todo
 * refactor - move js logic from Alpine.bind into Alpine.data
@@ -18,12 +20,10 @@ todo
 * a way to make all columns have the same width, to make them easier to see
   * sheet should open this way, user can then decide to make col full width
 
-* filter based on regex
 * changing order of cols
   * are these preserved when sharing sheet?
 
 * `q` should take back to parent sheet, it should NOT be the same as a back button
-* refactor js code, move operations that read/modify state into `Alpine.data` from `Alpine.bind`
 * insert values
 * col dtypes
 * histogram bars
@@ -64,7 +64,6 @@ rename columns
 
 frontend-interactivity
 * how would column shifting work?
-* hiding columns
 
 # how will these be tackled?
 column types
@@ -73,15 +72,6 @@ column types
 * operations on columns
 
 interface for excluding columns
-
-[Base]
-[Freq]
--> special "Enter" action - filter action on source table
-
-[Base]
--> `|` (regex, column) -> [Base]
--> `F` (one or more columns) -> [Freq]
--> `W` (key cols..., target col, agg col, agg op) [Pivot?]
 
 # few interesting things
 RestrictedPython package
