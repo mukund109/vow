@@ -250,7 +250,6 @@ document.addEventListener('alpine:init', () => {
     disable_search_mode () {
       this.$refs['search-row'].style.display = 'none';
       this.search_mode = false;
-      this.$refs[`cell-${this.rowidx}-${this.colidx}`].scrollIntoView()
     },
 
     handleKeydown(e) {
