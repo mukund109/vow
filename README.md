@@ -1,7 +1,5 @@
 where was i
-* complete regex search functionality
-  * cannot unfocus on search input box using mouse
-  * was adding button to close search input
+* implement backend part of regex search
 
 todo
 * refactor - move js logic from Alpine.bind into Alpine.data
@@ -10,6 +8,7 @@ todo
 * low priority: can hidden cols be key cols? shouldn't matter
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
+* freeze header row
 * arrow key navigation
 * shortcuts for opening study-metadata, sample-metadata
 * doc-sidebar

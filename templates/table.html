@@ -77,10 +77,6 @@ td.selected-cell {
   visibility: hidden;
 }
 
-.nodisplay {
-  display: none;
-}
-
 .progress {
   width: 10%;
 }
@@ -97,14 +93,15 @@ li.breadcrumb-item a {
   color: grey;
 }
 
-.mybtn {
+.close-btn {
   background-color: white;
   border: none;
   color: black;
-  padding: 2px 10px;
-  font-size: 16px;
+  padding: 0px 0px 0px 7px;
+  font-size: 19px;
   cursor: pointer;
 }
+
 </style>
 
 <div>
@@ -151,13 +148,24 @@ li.breadcrumb-item a {
         </th>
         {% endfor %}
       </tr>
-      <tr style="display: none" x-bind="search_row()" x-ref="search-row">
+      <tr style="display: none" x-bind="search_row()">
+        {% for col in sheet.columns %}
         <td>
-          <input x-ref="search-input" type="text" placeholder="Search" autofocus>
-          <button class="mybtn">
-            <span>x</span>
+          <div
+            x-bind="search_div({{ loop.index0 }})"
+            x-ref="search-{{ loop.index0 }}"
+            style="display: none"
+            >
+          <input x-bind="search_input({{ loop.index0 }})" type="text" placeholder="Search">
+          <button
+            x-bind="search_close_btn()"
+            class="close-btn tooltip"
+            data-tooltip="[Esc]">
+            <span>&times;</span>
           </button>
+          <div>
         </td>
+        {% endfor %}
       </tr>
     {% for row in sheet.rows %}
     {% set outerloop = loop %}

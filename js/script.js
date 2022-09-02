@@ -47,6 +47,7 @@ document.addEventListener('alpine:init', () => {
     hidden_cols: new Set(), // contains indices of hidden columns
     agg_col: undefined,
     search_mode: false,
+    search_input: '',
 
     saveStateToStorage(key=window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
@@ -161,6 +162,10 @@ document.addEventListener('alpine:init', () => {
       this.performOp(type, {'params': col_name })
     },
 
+    performRegexSearchOp() {
+      console.log("Performed Regex search")
+    },
+
     update_rowid(delta) {
       this.rowidx = Math.max(Math.min(this.rowidx + delta, num_rows - 1), 0)
     },
@@ -238,18 +243,38 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    is_search_match(rowidx){
+      const re = new RegExp(this.search_input)
+      const val = cellToVal(this.$refs[`cell-${rowidx}-${this.colidx}`])
+      if (val == null) return false;
+
+      return val.search(re) >= 0
+    },
+
+    is_filtered(rowidx) {
+      const row_el = this.$refs[`row-${rowidx}`]
+      // if `filter_vals` is empty return false
+      if (Object.keys(this.filter_vals).length == 0) {
+        return false
+      }
+
+      for (var j = 0, cell; cell = row_el.cells[j]; j++) {
+        if (j in this.filter_vals && this.filter_vals[j].has(cellToVal(cell))) {
+          return false
+        }
+      }
+      return true
+    },
+
     enable_search_mode(e) {
       // prevents the '|' from appearing in input box
       if (!this.search_mode) {e.preventDefault()}
       this.search_mode = true;
-      this.$refs['search-row'].style.display = '';
-      this.$refs['search-input'].focus();
-      this.$refs['col-0'].scrollIntoView();
     },
 
     disable_search_mode () {
-      this.$refs['search-row'].style.display = 'none';
       this.search_mode = false;
+      this.search_input = '';
     },
 
     handleKeydown(e) {
@@ -347,7 +372,7 @@ document.addEventListener('alpine:init', () => {
     ':class'() {
       return {
         'active': this.rowidx == idx,
-        'filtered': isFiltered(this.$refs[`row-${idx}`], this.filter_vals),
+        'filtered': (!this.search_mode & this.is_filtered(idx)) | (this.search_mode & !this.is_search_match(idx)),
       }
     }
   }));
@@ -391,11 +416,45 @@ document.addEventListener('alpine:init', () => {
   }));
 
   Alpine.bind('search_row', () => ({
-    // ':class'() {
-    //   return {
-    //     'nodisplay': !this.search_mode
-    //   }
-    // }
+    '@click.outside'() {
+      this.disable_search_mode()
+    },
+
+    ':style'() {
+      return {
+        'display': this.search_mode ? '' : 'none'
+      }
+    }
+  }));
+
+  Alpine.bind('search_div', (colidx) => ({
+    ':style'() {
+      return {
+        'display': this.search_mode & (colidx == this.colidx) ? '' : 'none'
+      }
+    }
+  }));
+
+  Alpine.bind('search_input', (colidx) => ({
+    'x-effect'() {
+      if (this.search_mode & colidx == this.colidx) {
+        this.$el.focus()
+      }
+    },
+
+    // Note: all input elements (there's one for each col) are
+    // bound to the same variable `this.search_input`
+    'x-model': 'search_input',
+
+    '@keydown.enter'() {
+      this.performRegexSearchOp()
+    }
+  }));
+
+  Alpine.bind('search_close_btn', () => ({
+    '@click'() {
+      this.disable_search_mode()
+    }
   }));
 
 });
