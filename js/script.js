@@ -163,7 +163,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     performRegexSearchOp() {
-      console.log("Performed Regex search")
+      const cols_to_return = this.get_visible_col_names()
+      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      this.performOp("search", {
+        'col': col_name,
+        'regex': this.search_input,
+        'columns_to_return': cols_to_return
+      })
     },
 
     update_rowid(delta) {
@@ -356,23 +362,10 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings(),
 
     '@keydown.enter.window'() {
+      if (this.search_mode) { return }
       this.performFacetOp(key_cols)
     }
   }));
-
-  function isFiltered(row_el, filter_vals) {
-    // if `filter_vals` is empty return false
-    if (Object.keys(filter_vals).length == 0) {
-      return false
-    }
-
-    for (var j = 0, cell; cell = row_el.cells[j]; j++) {
-      if (j in filter_vals && filter_vals[j].has(cellToVal(cell))) {
-        return false
-      }
-    }
-    return true
-  }
 
   Alpine.bind('row', (idx) => ({
     ':class'() {

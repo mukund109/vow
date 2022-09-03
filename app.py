@@ -4,7 +4,15 @@ from fastapi.staticfiles import StaticFiles
 import random
 import duckdb
 from typing import Dict, List, Optional, Union, Tuple, Literal
-from pypika import Table, Query, Field, Case, Criterion
+from pypika import (
+    Table,
+    Query,
+    Field,
+    Case,
+    Criterion,
+    CustomFunction,
+    Parameter,
+)
 from pypika.enums import Order
 from pypika.queries import QueryBuilder
 from pypika.functions import Count, First, Max
@@ -13,13 +21,14 @@ from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from utils import fetch_data
 
-
 # create a flask application
 app = FastAPI()
 # set the template directory
 templates = Jinja2Templates(directory="templates")
 
 fetch_data()
+
+regexp_matches = CustomFunction("regexp_matches", ["string", "regex"])
 
 
 def uniqueid():
@@ -34,11 +43,17 @@ unique_sequence = uniqueid()
 sheets: Dict[str, "Sheet"] = dict()
 
 
-def _run_query(view: QueryBuilder, max_rows=40) -> Tuple[List, List]:
+def _run_query(
+    view: QueryBuilder, query_params: Optional[List[str]] = None, max_rows=40
+) -> Tuple[List, List]:
     conn = _get_conn()
     sql_query = view.limit(max_rows).get_sql()
+
+    if query_params is None:
+        query_params = []
+
     try:
-        conn.execute(sql_query)
+        conn.execute(sql_query, query_params)
     except RuntimeError as e:
         print(sql_query)
         raise e
@@ -60,11 +75,19 @@ class Sheet:
         self,
         view: QueryBuilder,
         source: Optional["Sheet"],
+        query_params: Optional[List[str]] = None,  # for parameterized queries
         desc: Optional[str] = None,
     ):
-        # TODO: source is different for different types of sheets
         self.view = view
-        self.rows, self.columns = _run_query(self.view)
+
+        # append query parameters to parent's query params
+        query_params = [] if query_params is None else query_params
+        source_params = [] if source is None else source.query_params
+        self.query_params = source_params + query_params
+
+        self.rows, self.columns = _run_query(
+            self.view, query_params=self.query_params
+        )
         self.uid = next(unique_sequence)
         self.source = source
 
@@ -181,6 +204,30 @@ class Sheet:
         res = self._filter_except(self.view, filters, cols_to_return)
         return Sheet(res, self, desc="fil2")
 
+    def _filter_regex(
+        self,
+        view,
+        column: str,
+        regex: str,
+        cols_to_return: Optional[List[str]],
+    ) -> QueryBuilder:
+        res = Query.from_(view).where(
+            regexp_matches(Field(column), Parameter("?"))
+        )
+
+        if cols_to_return is None:
+            res = res.select("*")
+        else:
+            res = res.select(*[Field(col) for col in cols_to_return])
+
+        return res
+
+    def filter_regex(
+        self, column: str, regex: str, cols_to_return: Optional[List[str]]
+    ) -> "Sheet":
+        res = self._filter_regex(self.view, column, regex, cols_to_return)
+        return Sheet(res, self, query_params=[regex], desc="search")
+
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
         """
         aggs: (field, aggfunction)
@@ -256,6 +303,13 @@ class Sheet:
 
         if isinstance(operation, FacetOperation):
             return self.facet_search(filters=operation.facets)
+
+        if isinstance(operation, RegexSearchOperation):
+            return self.filter_regex(
+                column=operation.col,
+                regex=operation.regex,
+                cols_to_return=operation.columns_to_return,
+            )
 
         op = operation.operation_type
         params = operation.params
@@ -335,6 +389,18 @@ class FreqSheet(Sheet):
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
+    def filter_regex(
+        self, column: str, regex: str, *args, **kwargs
+    ) -> "FreqSheet":
+        res = self._filter_regex(self.view, column, regex, *args, **kwargs)
+        return FreqSheet(
+            res,
+            key_cols=self.key_cols,
+            source=self.source,
+            query_params=[regex],
+            desc="fsearch",
+        )
+
     @property
     def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
@@ -366,6 +432,13 @@ class PivotOperation(BaseModel):
     key_cols: List[str]
     pivot_col: str
     agg_col: str
+
+
+class RegexSearchOperation(BaseModel):
+    operation_type: str = "search"
+    col: str
+    regex: str
+    columns_to_return: Optional[List[str]] = None
 
 
 class Operation(BaseModel):
@@ -404,6 +477,7 @@ def post_view(
         FilterOperation,
         PivotOperation,
         FacetOperation,
+        RegexSearchOperation,
     ],
 ):
     prev_sheet = sheets[uid]
