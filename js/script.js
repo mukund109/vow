@@ -244,7 +244,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     is_search_match(rowidx){
-      const re = new RegExp(this.search_input)
+      let re;
+      try {
+        re = new RegExp(this.search_input)
+      } catch (e) {
+        return false
+      }
+
       const val = cellToVal(this.$refs[`cell-${rowidx}-${this.colidx}`])
       if (val == null) return false;
 
@@ -448,6 +454,15 @@ document.addEventListener('alpine:init', () => {
 
     '@keydown.enter'() {
       this.performRegexSearchOp()
+    },
+
+    ':class'() {
+      try {
+        new RegExp(this.search_input)
+      } catch (e) {
+        return 'is-error'
+      }
+      return 'is-success'
     }
   }));
 
