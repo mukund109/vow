@@ -48,6 +48,8 @@ document.addEventListener('alpine:init', () => {
     agg_col: undefined,
     search_mode: false,
     search_input: '',
+    // contains indices of columns that are rendered over multiple lines
+    multiline_cols: new Set(),
 
     saveStateToStorage(key=window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
@@ -57,6 +59,7 @@ document.addEventListener('alpine:init', () => {
             rowidx: this.rowidx,
             colidx: this.colidx,
             hidden_cols: Array.from(this.hidden_cols),
+            multiline_cols: Array.from(this.multiline_cols),
           })
       )
     },
@@ -72,6 +75,7 @@ document.addEventListener('alpine:init', () => {
         this.rowidx = state.rowidx
         this.colidx = state.colidx
         this.hidden_cols = new Set(state.hidden_cols)
+        this.multiline_cols = new Set(state.multiline_cols)
       }
     },
 
@@ -249,6 +253,14 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    toggle_multiline_col() {
+      if (this.multiline_cols.has(this.colidx)) {
+        this.multiline_cols.delete(this.colidx)
+      } else {
+        this.multiline_cols.add(this.colidx)
+      }
+    },
+
     is_search_match(rowidx){
       let re;
       try {
@@ -329,6 +341,7 @@ document.addEventListener('alpine:init', () => {
         '|': () => {this.enable_search_mode(e)},
         'q': () => {this.goback()},
         'p': () => {this.goforward()},
+        'v': () => {this.toggle_multiline_col()},
       }
       const searchmode_key_map = {
         'Escape': () => {this.disable_search_mode()}
@@ -410,6 +423,7 @@ document.addEventListener('alpine:init', () => {
         'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'selected-col': (this.colidx == j),
         'hidden-cell': this.hidden_cols.has(j),
+        'wrapped-cell': this.multiline_cols.has(j),
       }
     },
 
