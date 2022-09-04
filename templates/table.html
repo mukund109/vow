@@ -3,6 +3,13 @@
 
 <style>
 
+#cheatsheet {
+  margin: 3rem 1rem;
+  color: grey;
+  font-size: 0.6rem;
+  font-family: 'Courier New', monospace;
+}
+
 thead, tbody { display: block; }
 
 tbody {
@@ -86,7 +93,7 @@ td.selected-cell {
 }
 
 .progress {
-  width: 10%;
+  width: 100%;
 }
 
 .progress:indeterminate {
@@ -110,94 +117,125 @@ li.breadcrumb-item a {
   cursor: pointer;
 }
 
+#parent-sheets {
+  padding: 0.2rem 0.5rem;
+}
+
 </style>
-
-<div>
-  <ul class="breadcrumb">
-    <li class="breadcrumb-item">
-      <a href="#">tables</a>
-    </li>
-    {% for parent in sheet.lineage %}
-    <li class="breadcrumb-item">
-      <a href="/{{ parent.uid }}">{{ parent }}</a>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-
 <div id="table-parent" x-data="sheet_parent()" x-bind="sheet_parent_bind()">
-  <progress class="hidden progress" x-bind="progress()" max="100">
-  </progress>
+  <div class="container">
 
-  <table class="table table-scroll"
-    x-cloak
-    x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }}, {{ sheet.parent.uid }})"
-    x-bind="
-    {% if sheet.typ == 'freq' %}
-    {{ sheet.typ }}_sheet({{ sheet.key_col_indices }})
-    {% else %}
-    {{ sheet.typ }}_sheet()
-    {% endif %}
-    ">
-      <tr>
-        {% for col in sheet.columns %}
-        <th
-          x-ref="col-{{ loop.index0 }}"
-          x-bind="col({{ loop.index0 }})"
-          class="{{ 'sorted-col' if col in sheet.orderbys else '' }}"
-          data-colname="{{ col }}"
-          >
-        {{ col }}
-          {% if col in sheet.orderbys %}
-          <span class="arrow">
-            {{ '↑' if sheet.orderbys[col] else '↓' }}
-          </span>
-          {% endif %}
-        </th>
+    <div class="columns">
+      <div class="column col-1 hide-xl loading hidden" x-bind="progress()"></div>
+      <ul id="parent-sheets" class="column col-10 breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="#">tables</a>
+        </li>
+        {% for parent in sheet.lineage %}
+        <li class="breadcrumb-item">
+          <a href="/{{ parent.uid }}">{{ parent }}</a>
+        </li>
         {% endfor %}
-      </tr>
-      <tr style="display: none" x-bind="search_row()">
-        {% for col in sheet.columns %}
-        <td>
-          <div
-            x-bind="search_div({{ loop.index0 }})"
-            x-ref="search-{{ loop.index0 }}"
-            style="display: none"
-            >
-          <input style="display: inline" x-bind="search_input({{ loop.index0 }})" class="form-input" type="text" placeholder="Regex search">
-          <button
-            x-bind="search_close_btn()"
-            class="close-btn tooltip"
-            data-tooltip="[Esc]">
-            <span>&times;</span>
-          </button>
-          <div>
-        </td>
-        {% endfor %}
-      </tr>
-    {% for row in sheet.rows %}
-    {% set outerloop = loop %}
-    <tr
-      x-bind="row({{ loop.index0 }})"
-      x-ref="row-{{ outerloop.index0 }}" >
+      </ul>
+    </div>
 
-      {% for col in sheet.columns %}
-      <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
-          x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
-          class="
-          {% if row[loop.index0] is none %}
-          null
+    <div class="columns">
+      <div class="column col-1 hide-xl">
+        <div id="cheatsheet">
+          <p><span class="label">?</span> hide cheatsheet</p>
+          <p> Arrow /
+            <span class="label">j</span>
+            <span class="label">k</span>
+            <span class="label">h</span>
+            <span class="label">l</span>
+          navigate
+          </p>
+          <p><span class="label">F</span> frequency</p>
+          <p>
+            <span class="label">q</span> back
+            <br/>
+            <span class="label">p</span> forward
+          </p>
+          <p>
+            <span class="label">]</span> sort desc
+            <br/>
+            <span class="label">[</span> sort asc
+          </p>
+        </div>
+      </div>
+      <div class="column col-10 col-xl-auto">
+        <table class="table table-scroll"
+          x-cloak
+          x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }}, {{ sheet.parent.uid }})"
+          x-bind="
+          {% if sheet.typ == 'freq' %}
+          {{ sheet.typ }}_sheet({{ sheet.key_col_indices }})
+          {% else %}
+          {{ sheet.typ }}_sheet()
           {% endif %}
           ">
-        {% if row[loop.index0] is none %}
-          NaN
-        {% else %}
-        {{ row[loop.index0] }}
-        {% endif %}
-      </td>
-      {% endfor %}
-    </tr>
-      {% endfor %}
-  </table>
+            <tr>
+              {% for col in sheet.columns %}
+              <th
+                x-ref="col-{{ loop.index0 }}"
+                x-bind="col({{ loop.index0 }})"
+                class="{{ 'sorted-col' if col in sheet.orderbys else '' }}"
+                data-colname="{{ col }}"
+                >
+              {{ col }}
+                {% if col in sheet.orderbys %}
+                <span class="arrow">
+                  {{ '↑' if sheet.orderbys[col] else '↓' }}
+                </span>
+                {% endif %}
+              </th>
+              {% endfor %}
+            </tr>
+            <tr style="display: none" x-bind="search_row()">
+              {% for col in sheet.columns %}
+              <td>
+                <div
+                  x-bind="search_div({{ loop.index0 }})"
+                  x-ref="search-{{ loop.index0 }}"
+                  style="display: none"
+                  >
+                <input style="display: inline" x-bind="search_input({{ loop.index0 }})" class="form-input" type="text" placeholder="Regex search">
+                <button
+                  x-bind="search_close_btn()"
+                  class="close-btn tooltip"
+                  data-tooltip="[Esc]">
+                  <span>&times;</span>
+                </button>
+                <div>
+              </td>
+              {% endfor %}
+            </tr>
+          {% for row in sheet.rows %}
+          {% set outerloop = loop %}
+          <tr
+            x-bind="row({{ loop.index0 }})"
+            x-ref="row-{{ outerloop.index0 }}" >
+
+            {% for col in sheet.columns %}
+            <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
+                x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
+                class="
+                {% if row[loop.index0] is none %}
+                null
+                {% endif %}
+                ">
+              {% if row[loop.index0] is none %}
+                NaN
+              {% else %}
+              {{ row[loop.index0] }}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+            {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
