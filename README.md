@@ -1,5 +1,23 @@
 where was i
-* implement backend part of regex search
+* implement QOL changes
+
+pre-release checklist
+* [easy] show total num rows and other useful info
+* on zoom, sheet window size shouldn't change
+* freeze header row
+* doc-sidebar
+* some kind of pagination
+* a way to make all columns have the same width, to make them easier to see
+  * sheet should open this way, user can then decide to make col full width
+* [easy] `q` should take back to parent sheet, it should NOT be the same as a back button
+* histogram bars
+* col dtypes
+* mouse should hide itself
+* column hover - buttons and [shortcut], and "help"
+* all "help" should link to command palette
+* links to previous sheet to have shorter names with tooltip
+* download as csv/parquet
+* show multiple datasets on homepage
 
 todo
 * refactor - move js logic from Alpine.bind into Alpine.data
@@ -8,30 +26,17 @@ todo
 * low priority: can hidden cols be key cols? shouldn't matter
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
 * need lazy eval in case someone opens a deeply nested sheet, all source sheet queries shouldn't be run
-* freeze header row
-* arrow key navigation
-* shortcuts for opening study-metadata, sample-metadata
-* doc-sidebar
 * links to previous sheets
   * list of previous sheets should not change on sort
   * browser history can still change
-* some kind of pagination
-* a way to make all columns have the same width, to make them easier to see
-  * sheet should open this way, user can then decide to make col full width
 
 * changing order of cols
   * are these preserved when sharing sheet?
 
-* `q` should take back to parent sheet, it should NOT be the same as a back button
 * insert values
-* col dtypes
-* histogram bars
 * column summary info
 * left,right hover-on-scroll div
-* column hover - buttons and [shortcut], and "help"
-* all "help" should link to command palette
 
-* re-write frontend in Elm in July?
 * get as far as possible can with server-side
 
 display message if server responds with 400 code on POST request
