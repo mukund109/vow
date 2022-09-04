@@ -1,21 +1,26 @@
 where was i
 * implement QOL changes
 
+cols should be first rendered with a default max-width with overflow set to hidden
+columns have the same width, to make them easier to see
+add buttons for toggling width of column with shortcut tooltips
+
 pre-release checklist
-* [easy] show total num rows and other useful info
+* tooltip on sort sign?
+* button to open new sheet with filters
 * on zoom, sheet window size shouldn't change
+* [easy] show total num rows and other useful info
+* don't scroll cell into view if mouse hovers over it
 * freeze header row
 * doc-sidebar
 * some kind of pagination
-* a way to make all columns have the same width, to make them easier to see
-  * sheet should open this way, user can then decide to make col full width
 * histogram bars
 * col dtypes
 * mouse should hide itself
 * column hover - buttons and [shortcut], and "help"
 * all "help" should link to command palette
 * links to previous sheet to have shorter names with tooltip
-* download as csv/parquet
+* download as csv/parquet, load table into pandas
 * show multiple datasets on homepage
 * chrome loading issue
 

@@ -3,19 +3,13 @@
 
 <style>
 
-#cheatsheet {
-  margin: 3rem 1rem;
-  color: grey;
-  font-size: 0.6rem;
-  font-family: 'Courier New', monospace;
+table {
+  height: 90vh;
 }
 
-thead, tbody { display: block; }
-
 tbody {
-    height: 850px;
-    overflow-y: auto;
-    overflow-x: auto;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .table th {
@@ -117,9 +111,22 @@ li.breadcrumb-item a {
   cursor: pointer;
 }
 
+#table-footer {
+  margin: 0.5rem 0;
+  background-color: whitesmoke;
+}
+
 #parent-sheets {
   padding: 0.2rem 0.5rem;
 }
+
+#cheatsheet {
+  margin: 3rem 1rem;
+  color: grey;
+  font-size: 0.6rem;
+  font-family: 'Courier New', monospace;
+}
+
 
 </style>
 <div id="table-parent" x-data="sheet_parent()" x-bind="sheet_parent_bind()">
@@ -234,6 +241,7 @@ li.breadcrumb-item a {
           </tr>
             {% endfor %}
         </table>
+        <div id="table-footer" x-cloak><b>19,203</b> rows<div>
       </div>
     </div>
   </div>
