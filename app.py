@@ -108,6 +108,16 @@ class Sheet:
             return [self]
         return self.source.lineage + [self]
 
+    @property
+    def parent(self) -> Optional["Sheet"]:
+        """
+        Returns parent sheet if it exists otherwise returns self
+        """
+        lineage = self.lineage
+        if len(lineage) <= 1:
+            return self
+        return lineage[-2]
+
     def __str__(self):
         if self.source is None and self.desc is None:
             return f"{self.uid}"

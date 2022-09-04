@@ -39,7 +39,7 @@ document.addEventListener('alpine:init', () => {
     }
   }))
 
-  Alpine.data('sheet', (num_rows, num_cols) => ({
+  Alpine.data('sheet', (num_rows, num_cols, parent_sheet_id) => ({
     rowidx: 0,
     colidx: 0,
     key_cols: [], // contains indices
@@ -289,6 +289,15 @@ document.addEventListener('alpine:init', () => {
       this.search_input = '';
     },
 
+    goback() {
+      // openSheet(parent_sheet_id)
+      history.back()
+    },
+
+    goforward() {
+      history.forward()
+    },
+
     handleKeydown(e) {
       // console.log(e.key);
       if (e.ctrlKey) {
@@ -318,6 +327,8 @@ document.addEventListener('alpine:init', () => {
         '[': () => {this.performSortOp('sa')},
         ']': () => {this.performSortOp('sd')},
         '|': () => {this.enable_search_mode(e)},
+        'q': () => {this.goback()},
+        'p': () => {this.goforward()},
       }
       const searchmode_key_map = {
         'Escape': () => {this.disable_search_mode()}

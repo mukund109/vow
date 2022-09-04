@@ -9,7 +9,6 @@ pre-release checklist
 * some kind of pagination
 * a way to make all columns have the same width, to make them easier to see
   * sheet should open this way, user can then decide to make col full width
-* [easy] `q` should take back to parent sheet, it should NOT be the same as a back button
 * histogram bars
 * col dtypes
 * mouse should hide itself
@@ -18,6 +17,7 @@ pre-release checklist
 * links to previous sheet to have shorter names with tooltip
 * download as csv/parquet
 * show multiple datasets on homepage
+* chrome loading issue
 
 todo
 * refactor - move js logic from Alpine.bind into Alpine.data
