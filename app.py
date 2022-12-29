@@ -40,10 +40,11 @@ def uniqueid():
 
 unique_sequence = uniqueid()
 
+# core data structure (mapping from sheet uid to Sheet)
 sheets: Dict[str, "Sheet"] = dict()
 
 
-def _run_query(
+def _execute_query(
     view: QueryBuilder, query_params: Optional[List[str]] = None, max_rows=40
 ) -> Tuple[List, List]:
     conn = _get_conn()
@@ -85,7 +86,7 @@ class Sheet:
         source_params = [] if source is None else source.query_params
         self.query_params = source_params + query_params
 
-        self.rows, self.columns = _run_query(
+        self.rows, self.columns = _execute_query(
             self.view, query_params=self.query_params
         )
         self.uid = next(unique_sequence)
@@ -245,7 +246,7 @@ class Sheet:
         col_limit = 35
         temp = Query.from_(self.view)
         temp = temp.select(pivot_col).distinct()
-        rows, cols = _run_query(temp, max_rows=col_limit + 1)
+        rows, cols = _execute_query(temp, max_rows=col_limit + 1)
         assert len(cols) == 1
         print(len(rows), rows)
         if len(rows) > col_limit:
@@ -284,13 +285,11 @@ class Sheet:
             "FreqOperation",
             "FilterOperation",
             "PivotOperation",
-            "FacetOperation",
         ],
     ) -> "Sheet":
 
         if isinstance(operation, FreqOperation):
-            res = self.frequency(operation.cols)
-            return res
+            return self.frequency(operation.cols)
 
         if isinstance(operation, FilterOperation):
             filters = operation.filters
@@ -310,9 +309,6 @@ class Sheet:
             return self.pivot(
                 operation.key_cols, operation.pivot_col, operation.agg_col
             )
-
-        if isinstance(operation, FacetOperation):
-            return self.facet_search(filters=operation.facets)
 
         if isinstance(operation, RegexSearchOperation):
             return self.filter_regex(
@@ -415,12 +411,28 @@ class FreqSheet(Sheet):
     def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
 
+    def run_op(
+        self,
+        operation: Union[
+            "Operation",
+            "FreqOperation",
+            "FilterOperation",
+            "PivotOperation",
+            "FacetOperation",
+        ],
+    ) -> "Sheet":
+        if isinstance(operation, FacetOperation):
+            return self.facet_search(operation.facets)
+
+        return super().run_op(operation)
+
 
 class FreqOperation(BaseModel):
     # WARNING: pydantic isn't pattern matching on the value of
     # `operation_type`. Instead its matching on the attributes
     # `operation_type` and `cols`
     # TODO: convert operation type to literal?
+    # TODO: separate sort operation
     operation_type: str = "f"
     cols: List[str]
 
