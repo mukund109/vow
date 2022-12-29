@@ -81,14 +81,7 @@ class Sheet:
     ):
         self.view = view
 
-        # append query parameters to parent's query params
-        query_params = [] if query_params is None else query_params
-        source_params = [] if source is None else source.query_params
-        self.query_params = source_params + query_params
-
-        self.rows, self.columns = _execute_query(
-            self.view, query_params=self.query_params
-        )
+        self.query_params = query_params or []
         self.uid = next(unique_sequence)
         self.source = source
 
@@ -99,6 +92,10 @@ class Sheet:
             field.name: (order == Order.asc)
             for field, order in self.view._orderbys
         }
+
+        self.rows, self.columns = _execute_query(
+            self.view, query_params=self.all_query_params()
+        )
 
     @property
     def lineage(self) -> List["Sheet"]:
@@ -118,6 +115,11 @@ class Sheet:
         if len(lineage) <= 1:
             return self
         return lineage[-2]
+
+    def all_query_params(self) -> List[str]:
+        if self.source is None:
+            return self.query_params
+        return self.source.all_query_params() + self.query_params
 
     def __str__(self):
         if self.source is None and self.desc is None:
@@ -152,9 +154,7 @@ class Sheet:
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        if isinstance(self, FreqSheet):
-            return FreqSheet(res, self.key_cols, self.source)
-        return Sheet(res, self.source)
+        return Sheet(res, self.source, query_params=self.query_params)
 
     def _filter_exact(
         self,
@@ -407,6 +407,13 @@ class FreqSheet(Sheet):
             source=self.source,
             query_params=[regex],
             desc="fsearch",
+        )
+
+    def sort(self, col_name: str, ascending: bool = True) -> "FreqSheet":
+        order = Order.asc if ascending else Order.desc
+        res = Query.from_(self.view).orderby(col_name, order=order).select("*")
+        return FreqSheet(
+            res, self.key_cols, self.source, query_params=self.query_params
         )
 
     @property

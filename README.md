@@ -1,8 +1,7 @@
 on regex search, preserve active column
 indicator of multiline col, on any operation, preserve multiline cols
 save key cols in state
-bug: regex search of television followed by sorting throws internal server error
-* regex search throws error when '/' character is entered
+regex search throws error when '/' character is entered
 where was i
 * implement QOL changes
 
