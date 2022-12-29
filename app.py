@@ -374,7 +374,8 @@ class FreqSheet(Sheet):
         FreqSheet with the same `source` and `key_cols`
         """
 
-        self.check_for_key_cols(cols_to_return)
+        if cols_to_return is not None:
+            self.check_for_key_cols(cols_to_return)
         res = self._filter_exact(self.view, filters, cols_to_return)
         return FreqSheet(
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
@@ -389,7 +390,8 @@ class FreqSheet(Sheet):
         same as docs of `FreqSheet.filter_exact`
         """
 
-        self.check_for_key_cols(cols_to_return)
+        if cols_to_return is not None:
+            self.check_for_key_cols(cols_to_return)
         res = self._filter_except(self.view, filters, cols_to_return)
         return FreqSheet(
             res, key_cols=self.key_cols, source=self.source, desc="ffil"
