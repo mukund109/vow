@@ -2,7 +2,7 @@ import os
 import boto3
 
 
-def fetch_data():
+def fetch_sample_database():
     if os.path.isfile("vow.db"):
         return
 
