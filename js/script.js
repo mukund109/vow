@@ -35,7 +35,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.bind('progress', () => ({
     ':class'() {
       // when not loading, hides the progress bar
-      return { 'hidden' : !this.loading }
+      return { 'hidden': !this.loading }
     }
   }))
 
@@ -51,7 +51,7 @@ document.addEventListener('alpine:init', () => {
     // contains indices of columns that are rendered over multiple lines
     multiline_cols: new Set(),
 
-    saveStateToStorage(key=window.location.pathname) {
+    saveStateToStorage(key = window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
       sessionStorage.setItem(
         key, JSON.stringify(
@@ -91,7 +91,7 @@ document.addEventListener('alpine:init', () => {
 
       // sorting changes the url, but it shouldn't change state
       // the 'last' key is a way of passing current state to next page
-      if ( op == "sa" || op == "sd" ) {
+      if (op == "sa" || op == "sd") {
         this.saveStateToStorage("last")
       }
 
@@ -100,13 +100,13 @@ document.addEventListener('alpine:init', () => {
 
       promise.then(response => {
         // alert the user if response is 400
-        if (response.status == 400){
+        if (response.status == 400) {
           response.json().then(body => {
             this.loading = false
             alert(body.detail)
           })
         }
-        else{
+        else {
           response.json().then(body => {
             console.log(body);
             if (body.new_sheet != undefined) {
@@ -130,7 +130,7 @@ document.addEventListener('alpine:init', () => {
         alert("pick some values or columns to filter on")
         return
       }
-      this.performOp("fil", {'filters': filters, 'columns_to_return': cols_to_return, criterion: "any"});
+      this.performOp("fil", { 'filters': filters, 'columns_to_return': cols_to_return, criterion: "any" });
     },
 
     performPivotOp() {
@@ -142,17 +142,17 @@ document.addEventListener('alpine:init', () => {
       const key_col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
       const pivot_col = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
       const agg_col = this.$refs[`col-${this.agg_col}`].getAttribute("data-colname");
-      this.performOp("pivot", {'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col});
+      this.performOp("pivot", { 'key_cols': key_col_names, 'pivot_col': pivot_col, 'agg_col': agg_col });
     },
 
     performMultiFrequencyOp() {
       const col_names = this.key_cols.map(colidx => this.$refs[`col-${colidx}`].getAttribute("data-colname"));
-      this.performOp("f", {'cols': col_names});
+      this.performOp("f", { 'cols': col_names });
     },
 
     performFrequencyOp() {
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
-      this.performOp("f", {'cols': [col_name]});
+      this.performOp("f", { 'cols': [col_name] });
     },
 
     performFacetOp(key_cols) {
@@ -169,7 +169,7 @@ document.addEventListener('alpine:init', () => {
     performSortOp(type) {
       // type is one of 'sa', 'sd'
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
-      this.performOp(type, {'params': col_name })
+      this.performOp(type, { 'params': col_name })
     },
 
     performRegexSearchOp() {
@@ -218,7 +218,7 @@ document.addEventListener('alpine:init', () => {
       // toggles the presence of (colidx, value) in filter_vals
       if (colidx in this.filter_vals) {
         const vals = this.filter_vals[colidx]
-        if (vals.has(value)){
+        if (vals.has(value)) {
           vals.delete(value)
           if (vals.size == 0) {
             delete this.filter_vals[colidx]
@@ -267,7 +267,7 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    is_search_match(rowidx){
+    is_search_match(rowidx) {
       let re;
       try {
         re = new RegExp(this.search_input)
@@ -298,11 +298,11 @@ document.addEventListener('alpine:init', () => {
 
     enable_search_mode(e) {
       // prevents the '|' from appearing in input box
-      if (!this.search_mode) {e.preventDefault()}
+      if (!this.search_mode) { e.preventDefault() }
       this.search_mode = true;
     },
 
-    disable_search_mode () {
+    disable_search_mode() {
       this.search_mode = false;
       this.search_input = '';
     },
@@ -322,35 +322,35 @@ document.addEventListener('alpine:init', () => {
         return
       }
       const shift_key_map = {
-        'G': () => {this.update_rowid_to_max()},
-        'F': () => {this.performFrequencyOp()},
-        'W': () => {this.performPivotOp()},
+        'G': () => { this.update_rowid_to_max() },
+        'F': () => { this.performFrequencyOp() },
+        'W': () => { this.performPivotOp() },
       }
       const key_map = {
-        'g': () => {this.update_rowid_to_min()},
-        'f': () => {this.performMultiFrequencyOp()},
-        'j': () => {this.update_rowid(1)},
-        'k': () => {this.update_rowid(-1)},
-        'l': () => {this.update_colid(1)},
-        'h': () => {this.update_colid(-1)},
-        'ArrowDown': () => {this.update_rowid(1)},
-        'ArrowUp': () => {this.update_rowid(-1)},
-        'ArrowRight': () => {this.update_colid(1)},
-        'ArrowLeft': () => {this.update_colid(-1)},
-        '!': () => {this.toggle_key(this.colidx)},
-        '+': () => {this.toggle_agg_col(this.colidx)},
-        ',': () => {this.toggle_filter_vals()},
-        '-': () => {this.toggle_hidden_col()},
-        '"': () => {this.performFilterOp()},
-        '[': () => {this.performSortOp('sa')},
-        ']': () => {this.performSortOp('sd')},
-        '|': () => {this.enable_search_mode(e)},
-        'q': () => {this.goback()},
-        'p': () => {this.goforward()},
-        'v': () => {this.toggle_multiline_col()},
+        'g': () => { this.update_rowid_to_min() },
+        'f': () => { this.performMultiFrequencyOp() },
+        'j': () => { this.update_rowid(1) },
+        'k': () => { this.update_rowid(-1) },
+        'l': () => { this.update_colid(1) },
+        'h': () => { this.update_colid(-1) },
+        'ArrowDown': () => { this.update_rowid(1) },
+        'ArrowUp': () => { this.update_rowid(-1) },
+        'ArrowRight': () => { this.update_colid(1) },
+        'ArrowLeft': () => { this.update_colid(-1) },
+        '!': () => { this.toggle_key(this.colidx) },
+        '+': () => { this.toggle_agg_col(this.colidx) },
+        ',': () => { this.toggle_filter_vals() },
+        '-': () => { this.toggle_hidden_col() },
+        '"': () => { this.performFilterOp() },
+        '[': () => { this.performSortOp('sa') },
+        ']': () => { this.performSortOp('sd') },
+        '|': () => { this.enable_search_mode(e) },
+        'q': () => { this.goback() },
+        'p': () => { this.goforward() },
+        'v': () => { this.toggle_multiline_col() },
       }
       const searchmode_key_map = {
-        'Escape': () => {this.disable_search_mode()}
+        'Escape': () => { this.disable_search_mode() }
       }
       if (this.search_mode) {
         if (e.key in searchmode_key_map) searchmode_key_map[e.key]();
@@ -370,7 +370,7 @@ document.addEventListener('alpine:init', () => {
 
   let base_bindings = () => ({
 
-    "@keydown.window"(e) {this.handleKeydown(e)},
+    "@keydown.window"(e) { this.handleKeydown(e) },
 
     // state is stored on every keydown event
     // after a delay of 250ms
