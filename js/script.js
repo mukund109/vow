@@ -83,6 +83,12 @@ document.addEventListener('alpine:init', () => {
       // set `loading` to true before sending post request
       this.loading = true;
 
+      // on google chrome, after a regex operation, if user
+      // goes back, the search mode is still active but the
+      // search input is not in focus, which breaks seamlessness of
+      // the UI. So, we disable search mode beforehand
+      this.disable_search_mode()
+
       // sorting changes the url, but it shouldn't change state
       // the 'last' key is a way of passing current state to next page
       if ( op == "sa" || op == "sd" ) {
