@@ -162,27 +162,27 @@ class Sheet:
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
     ) -> QueryBuilder:
-        res = Query.from_(view)
+        qry = Query.from_(view)
         for field, keyword in filters:
             if keyword is None:
-                res = res.where(Field(field).isnull())
+                qry = qry.where(Field(field).isnull())
             else:
-                res = res.where(Field(field) == keyword)
+                qry = qry.where(Field(field) == keyword)
 
         if cols_to_return is None:
-            return res.select("*")
+            return qry.select("*")
 
-        res = res.select(*[Field(col) for col in cols_to_return])
-        return res
+        qry = qry.select(*[Field(col) for col in cols_to_return])
+        return qry
 
     def filter_exact(
         self,
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
     ) -> "Sheet":
-        res = self._filter_exact(self.view, filters, cols_to_return)
+        qry = self._filter_exact(self.view, filters, cols_to_return)
 
-        return Sheet(res, self, desc="fil")
+        return Sheet(qry, self, desc="fil")
 
     def _filter_except(
         self,
@@ -222,22 +222,22 @@ class Sheet:
         regex: str,
         cols_to_return: Optional[List[str]],
     ) -> QueryBuilder:
-        res = Query.from_(view).where(
+        qry = Query.from_(view).where(
             regexp_matches(Field(column), Parameter("?"))
         )
 
         if cols_to_return is None:
-            res = res.select("*")
+            qry = qry.select("*")
         else:
-            res = res.select(*[Field(col) for col in cols_to_return])
+            qry = qry.select(*[Field(col) for col in cols_to_return])
 
-        return res
+        return qry
 
     def filter_regex(
         self, column: str, regex: str, cols_to_return: Optional[List[str]]
     ) -> "Sheet":
-        res = self._filter_regex(self.view, column, regex, cols_to_return)
-        return Sheet(res, self, query_params=[regex], desc="search")
+        qry = self._filter_regex(self.view, column, regex, cols_to_return)
+        return Sheet(qry, self, query_params=[regex], desc="search")
 
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
         """

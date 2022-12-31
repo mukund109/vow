@@ -1,32 +1,29 @@
-on regex search, preserve active column
-indicator of multiline col, on any operation, preserve multiline cols
-save key cols in state
-regex search throws error when '/' character is entered
 where was i
 * implement QOL changes
 
-cols should be first rendered with a default max-width with overflow set to hidden
-columns have the same width, to make them easier to see
-add buttons for toggling width of column with shortcut tooltips
-
 pre-release checklist
-* tooltip on sort sign?
-* button to open new sheet with filters
-* on zoom, sheet window size shouldn't change
-* [easy] show total num rows and other useful info
-* don't scroll cell into view if mouse hovers over it
-* freeze header row
-* doc-sidebar
-* some kind of pagination
-* histogram bars
-* col dtypes
-* mouse should hide itself
-* column hover - buttons and [shortcut], and "help"
-* all "help" should link to command palette
-* links to previous sheet to have shorter names with tooltip
-* download as csv/parquet, load table into pandas
-* show multiple datasets on homepage
-* chrome loading issue
+* [FH] histogram bars
+* [FM] tooltip on sort sign?
+* [FM] button to open new sheet with filters
+* [FM] add buttons for toggling width of column with shortcut tooltips
+* [FM] column hover - buttons and [shortcut], and "help"
+* [FM] freeze header row
+* [FM] multi-line cols should remain multi-line after an operation
+* [F] columns have the same width, to make them easier to see
+* [F] cols should be first rendered with a default max-width with overflow set to hidden
+* [F] on zoom, sheet window size shouldn't change
+* [F] all "help" should link to command palette
+* [F] links to previous sheet to have shorter names with tooltip
+* [F] chrome loading issue? (going back after regex operation keeps the search bar open but out of focus)
+* [F] mouse should hide itself
+* [F] indicator of multiline col
+* [F] don't scroll cell into view if mouse hovers over it
+
+* [BH] show total num rows and other useful info
+* [BH] some kind of pagination
+* [BH] download as csv/parquet, load table into pandas
+* [BH] show multiple datasets on homepage
+* [B] col dtypes
 
 todo
 * refactor - move js logic from Alpine.bind into Alpine.data
