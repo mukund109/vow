@@ -173,7 +173,7 @@ li.breadcrumb-item a {
       <div class="column col-10 col-xl-auto">
         <table class="table table-scroll"
           x-cloak
-          x-data="sheet({{ sheet.rows|length }}, {{ sheet.columns|length }}, {{ sheet.parent.uid }})"
+          x-data="sheet({{ rows|length }}, {{ columns|length }}, {{ sheet.parent.uid }})"
           x-bind="
           {% if sheet.typ == 'freq' %}
           {{ sheet.typ }}_sheet({{ sheet.key_col_indices }})
@@ -182,7 +182,7 @@ li.breadcrumb-item a {
           {% endif %}
           ">
             <tr>
-              {% for col in sheet.columns %}
+              {% for col in columns %}
               <th
                 x-ref="col-{{ loop.index0 }}"
                 x-bind="col({{ loop.index0 }})"
@@ -199,7 +199,7 @@ li.breadcrumb-item a {
               {% endfor %}
             </tr>
             <tr style="display: none" x-bind="search_row()">
-              {% for col in sheet.columns %}
+              {% for col in columns %}
               <td>
                 <div
                   x-bind="search_div({{ loop.index0 }})"
@@ -217,13 +217,13 @@ li.breadcrumb-item a {
               </td>
               {% endfor %}
             </tr>
-          {% for row in sheet.rows %}
+          {% for row in rows %}
           {% set outerloop = loop %}
           <tr
             x-bind="row({{ loop.index0 }})"
             x-ref="row-{{ outerloop.index0 }}" >
 
-            {% for col in sheet.columns %}
+            {% for col in columns %}
             <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
                 x-bind="cell({{ outerloop.index0 }}, {{ loop.index0 }})"
                 class="
@@ -241,7 +241,24 @@ li.breadcrumb-item a {
           </tr>
             {% endfor %}
         </table>
-        <div id="table-footer" x-cloak><b>19,203</b> rows<div>
+        <div id="table-footer" x-cloak>
+          <b>{{ num_rows }}</b> rows
+          <span style="float: right">
+            {% if has_prev_page %}
+              <a id="previous-page" href="/{{ sheet.uid }}?page={{ page - 1 }}">prev</a>
+            {% else %}
+              prev
+            {% endif %}
+            <span class="label">[P]</span>
+            |
+            {% if has_next_page %}
+              <a id="next-page" href="/{{ sheet.uid }}?page={{ page + 1 }}">next</a>
+            {% else %}
+              next
+            {% endif %}
+            <span class="label">[N]</span>
+          </span>
+        <div>
       </div>
     </div>
   </div>

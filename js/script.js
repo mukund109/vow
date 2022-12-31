@@ -19,6 +19,13 @@ document.addEventListener('alpine:init', () => {
     window.location.href = new URL(sheet_id, window.location.origin)
   }
 
+  function openNextPage() {
+    document.getElementById('next-page').click()
+  }
+  function openPrevPage() {
+    document.getElementById('previous-page').click()
+  }
+
   Alpine.data('sheet_parent', () => ({
     loading: false,
 
@@ -325,6 +332,8 @@ document.addEventListener('alpine:init', () => {
         'G': () => { this.update_rowid_to_max() },
         'F': () => { this.performFrequencyOp() },
         'W': () => { this.performPivotOp() },
+        'N': openNextPage,
+        'P': openPrevPage,
       }
       const key_map = {
         'g': () => { this.update_rowid_to_min() },

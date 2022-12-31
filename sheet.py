@@ -1,3 +1,4 @@
+from functools import lru_cache
 import random
 from typing import Callable, List, Optional, Union, Tuple, Literal
 from duckdb import DuckDBPyConnection
@@ -83,9 +84,8 @@ def _execute_query(
     conn: DuckDBPyConnection,
     view: QueryBuilder,
     query_params: Optional[List[str]] = None,
-    max_rows=40,
 ) -> Tuple[List, List]:
-    sql_query = view.limit(max_rows).get_sql()
+    sql_query = view.get_sql()
 
     if query_params is None:
         query_params = []
@@ -137,11 +137,19 @@ class Sheet:
         }
 
         self.get_db_connection = self._infer_db(get_db_connection)
-        self.rows, self.columns = _execute_query(
+
+    def __len__(self):
+
+        view = Query.from_(self.view).select(
+            Count("*").as_("num_rows"),
+        )
+        rows, _ = _execute_query(
             self.get_db_connection(),
-            self.view,
+            view,
             query_params=self.all_query_params(),
         )
+        first_row = rows[0]
+        return first_row[0]
 
     def _infer_db(
         self, get_db_connection: Optional[Callable[[], DuckDBPyConnection]]
@@ -151,6 +159,32 @@ class Sheet:
         if self.source is not None:
             return self.source.get_db_connection
         raise ValueError("No database connection provided")
+
+    @lru_cache
+    def __getitem_cached__(self, slice_rep):
+        s = slice(*slice_rep[1])
+
+        view = self.view[s]
+
+        if not isinstance(view, QueryBuilder):
+            raise Exception(f"view has unexpected type {type(view)}")
+        rows, columns = _execute_query(
+            self.get_db_connection(),
+            view,
+            query_params=self.all_query_params(),
+        )
+        self.columns = columns
+        return rows, columns
+
+    def __getitem__(self, s):
+        # slice_rep is a hashable version of s
+        # which makes it compatible with lru_cache
+        slice_rep = s.__reduce__()
+
+        return self.__getitem_cached__(slice_rep)
+
+    def __hash__(self):
+        return hash(self.uid)
 
     @property
     def lineage(self) -> List["Sheet"]:
@@ -302,7 +336,7 @@ class Sheet:
         temp = Query.from_(self.view)
         temp = temp.select(pivot_col).distinct()
         rows, cols = _execute_query(
-            self.get_db_connection(), temp, max_rows=col_limit + 1
+            self.get_db_connection(), temp[: col_limit + 1]
         )
         assert len(cols) == 1
         print(len(rows), rows)

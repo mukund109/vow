@@ -1,14 +1,14 @@
+from typing import Dict, Union
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi import Request
+from fastapi.responses import RedirectResponse
 import duckdb
-from typing import Dict, Union
 from pypika import (
     Query,
 )
 from pypika.queries import QueryBuilder
-from fastapi import Request
-from fastapi.responses import RedirectResponse
 from utils import fetch_sample_database
 from sheet import (
     Sheet,
@@ -19,6 +19,8 @@ from sheet import (
     PivotOperation,
     RegexSearchOperation,
 )
+from pydantic import NonNegativeInt
+from fastapi.exceptions import HTTPException
 
 # create a flask application
 app = FastAPI()
@@ -43,18 +45,19 @@ def _initialize_view(table: str) -> QueryBuilder:
 
 
 if "gta" not in sheets:
-    sheets["gta"] = Sheet(
+    starting_sheet = Sheet(
         _initialize_view("test_2"),
         None,
         desc="gta",
         get_db_connection=get_conn,
     )
+    sheets[starting_sheet.uid] = starting_sheet
 
 
 @app.get("/")
 def index():
     # redirect to initial view
-    return RedirectResponse(url="/gta")
+    return RedirectResponse(url=f"/{starting_sheet.uid}")
 
 
 # passing uid in the body might be semantically more sensible
@@ -79,17 +82,35 @@ def post_view(
     return {"new_sheet": new_sheet.uid, "yolo": "Success"}
 
 
+_MAX_NUM_ROWS = 25
+
+
 @app.get("/{uid}")
-def get_sheet_by_uid(request: Request, uid: str):
+def get_sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
+
+    if uid not in sheets:
+        raise HTTPException(status_code=404, detail="Sheet not found")
 
     sheet = sheets[uid]
+    rows, columns = sheet[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
+    num_rows = len(sheet)
+
+    page_info = {
+        "has_prev_page": page > 0,
+        "has_next_page": (page + 1) * _MAX_NUM_ROWS < num_rows,
+        "page": page,
+    }
 
     return templates.TemplateResponse(
         "table.html",
         dict(
             request=request,
             msg="vow",
+            rows=rows,
+            columns=columns,
             sheet=sheet,
+            num_rows=num_rows,
+            **page_info,
         ),
     )
 
