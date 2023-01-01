@@ -13,6 +13,7 @@ from pypika.queries import QueryBuilder
 from utils import fetch_sample_database
 from sheet import (
     Sheet,
+    AboutSheet,
     Operation,
     FreqOperation,
     FilterOperation,
@@ -58,7 +59,7 @@ if "gta" not in sheets:
 @app.get("/")
 def index():
     # redirect to initial view
-    return RedirectResponse(url=f"/{starting_sheet.uid}")
+    return RedirectResponse(url=f"/sheets/{starting_sheet.uid}")
 
 
 # passing uid in the body might be semantically more sensible
@@ -85,9 +86,13 @@ def post_view(
 
 _MAX_NUM_ROWS = 25
 
+about_sheet = AboutSheet()
+sheets["about"] = about_sheet
+sheets[about_sheet.uid] = about_sheet
 
-@app.get("/{uid}")
-def get_sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
+
+@app.get("/sheets/{uid}")
+def sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
 
     if uid not in sheets:
         raise HTTPException(status_code=404, detail="Sheet not found")
@@ -106,7 +111,6 @@ def get_sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
         "table.html",
         dict(
             request=request,
-            msg="vow",
             rows=rows,
             columns=columns,
             sheet=sheet,
@@ -114,6 +118,11 @@ def get_sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
             **page_info,
         ),
     )
+
+
+@app.get("/about")
+def about():
+    return RedirectResponse(url=f"/sheets/about")
 
 
 @app.get("/downloads/{uid}")

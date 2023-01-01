@@ -16,12 +16,12 @@ pre-release checklist
 * [F] links to previous sheet to have shorter names with tooltip
 * [F] chrome loading issue? (going back after regex operation keeps the search bar open but out of focus)
 * [F] mouse should hide itself
-* [F] indicator of multiline col
+* [F] indicator of multi-line col
 * [F] don't scroll cell into view if mouse hovers over it
 * [F] load table into pandas
 
-* [BH] show total num rows and other useful info
 * [BH] show multiple datasets on homepage
+* [B] show useful info like col-types
 * [B] download as parquet
 * [B] col dtypes
 

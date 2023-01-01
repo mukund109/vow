@@ -4,6 +4,7 @@ from functools import lru_cache
 import random
 from typing import Callable, Iterator, List, Optional, Union, Tuple, Literal
 from duckdb import DuckDBPyConnection
+import duckdb
 from fastapi import HTTPException
 from pypika.queries import QueryBuilder
 from pypika.functions import Count, Max
@@ -566,3 +567,45 @@ class FreqSheet(Sheet):
             return self.facet_search(operation.facets)
 
         return super().run_op(operation)
+
+
+class StaticSheet(Sheet):
+    name: str
+    columns: List[str]
+    rows: List
+
+    def __init__(self):
+
+        super().__init__(
+            view=Query.from_(self.name).select("*"),
+            source=None,
+            desc=self.name,
+            get_db_connection=self._create_in_memory_db,
+        )
+
+    def _create_in_memory_db(self):
+        conn = duckdb.connect(":memory:")
+        conn.execute("PRAGMA default_null_order='NULLS LAST'")
+
+        col_str = ", ".join([f"{col} VARCHAR" for col in self.columns])
+        # insert rows into db
+        conn.execute(f"CREATE TABLE {self.name} ({col_str});")
+        conn.execute(
+            f"INSERT INTO about VALUES {','.join(map(str, self.rows))}"
+        )
+        return conn
+
+
+class AboutSheet(StaticSheet):
+    name = "about"
+    columns = ["item", "description"]
+    rows = [
+        (
+            "What?",
+            "A keyboard-driven tool for exploring tabular data.",
+        ),
+        (
+            "Why?",
+            "Its a quick and cheap way of sharing small-medium sized data. It removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
+        ),
+    ]

@@ -147,13 +147,13 @@ li.breadcrumb-item a {
         </li>
         {% for parent in sheet.lineage %}
         <li class="breadcrumb-item">
-          <a href="/{{ parent.uid }}">{{ parent }}</a>
+          <a href="/sheets/{{ parent.uid }}">{{ parent }}</a>
         </li>
         {% endfor %}
       </ul>
       <div style="padding: 0.6rem" class="column col-2 col-ml-auto">
-        <span class="navbar-links"><a href="/downloads/{{ sheet.uid }}/">Download table</a><span>
-        <span class="navbar-links"><a href="#">About</a></span>
+        <span class="navbar-links"><a href="/downloads/{{ sheet.uid }}/">Download</a><span>
+        <span class="navbar-links"><a href="/about">About</a></span>
       </div>
       <div class="column col-1">
       </div>
@@ -258,14 +258,14 @@ li.breadcrumb-item a {
           <b>{{ num_rows }}</b> rows
           <span style="float: right">
             {% if has_prev_page %}
-              <a id="previous-page" href="/{{ sheet.uid }}?page={{ page - 1 }}">prev</a>
+              <a id="previous-page" href="/sheets/{{ sheet.uid }}?page={{ page - 1 }}">prev</a>
             {% else %}
               prev
             {% endif %}
             <span class="label">[P]</span>
             |
             {% if has_next_page %}
-              <a id="next-page" href="/{{ sheet.uid }}?page={{ page + 1 }}">next</a>
+              <a id="next-page" href="/sheets/{{ sheet.uid }}?page={{ page + 1 }}">next</a>
             {% else %}
               next
             {% endif %}

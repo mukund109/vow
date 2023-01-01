@@ -3,9 +3,9 @@ document.addEventListener('alpine:init', () => {
   function sendPostRequest(data) {
 
     // strip out '/' from the url
-    let path = window.location.pathname.replace('\/', '');
+    let curr_sheet_id = window.location.pathname.split('/')[2];
 
-    return fetch(`/sheets/${path}`, {
+    return fetch(`/sheets/${curr_sheet_id}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: {
@@ -16,7 +16,7 @@ document.addEventListener('alpine:init', () => {
 
   function openSheet(sheet_id) {
     // opens new url corresponding to given sheet_id
-    window.location.href = new URL(sheet_id, window.location.origin)
+    window.location.href = new URL(`sheets/${sheet_id}`, window.location.origin)
   }
 
   function openNextPage() {
