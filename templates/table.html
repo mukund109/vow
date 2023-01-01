@@ -120,6 +120,13 @@ li.breadcrumb-item a {
   padding: 0.2rem 0.5rem;
 }
 
+.navbar-links {
+  margin-left: 0.5rem;
+}
+.navbar-links a {
+  color: grey;
+}
+
 #cheatsheet {
   margin: 3rem 1rem;
   color: grey;
@@ -134,7 +141,7 @@ li.breadcrumb-item a {
 
     <div class="columns">
       <div class="column col-1 hide-xl loading hidden" x-bind="progress()"></div>
-      <ul id="parent-sheets" class="column col-10 breadcrumb">
+      <ul id="parent-sheets" class="column col-9 breadcrumb">
         <li class="breadcrumb-item">
           <a href="#">tables</a>
         </li>
@@ -144,6 +151,12 @@ li.breadcrumb-item a {
         </li>
         {% endfor %}
       </ul>
+      <div style="padding: 0.6rem" class="column col-2 col-ml-auto">
+        <span class="navbar-links"><a href="/downloads/{{ sheet.uid }}/">Download table</a><span>
+        <span class="navbar-links"><a href="#">About</a></span>
+      </div>
+      <div class="column col-1">
+      </div>
     </div>
 
     <div class="columns">

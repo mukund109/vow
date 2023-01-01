@@ -1,6 +1,8 @@
+import io
+import csv
 from functools import lru_cache
 import random
-from typing import Callable, List, Optional, Union, Tuple, Literal
+from typing import Callable, Iterator, List, Optional, Union, Tuple, Literal
 from duckdb import DuckDBPyConnection
 from fastapi import HTTPException
 from pypika.queries import QueryBuilder
@@ -98,6 +100,7 @@ def _execute_query(
 
     try:
         rows = conn.fetchall()
+
     except RuntimeError as e:
         if e.args[0] == "no open result set":
             return [], []
@@ -106,6 +109,48 @@ def _execute_query(
 
     columns = [col[0] for col in conn.description]
     return rows, columns
+
+
+def _execute_query_csv_stream(
+    conn: DuckDBPyConnection,
+    view: QueryBuilder,
+    query_params: Optional[List[str]] = None,
+) -> Iterator[str]:
+    sql_query = view.get_sql()
+
+    if query_params is None:
+        query_params = []
+
+    try:
+        conn.execute(sql_query, query_params)
+    except RuntimeError as e:
+        print(sql_query)
+        raise e
+
+    buffer = io.StringIO()
+    csv_writer = csv.writer(buffer)
+
+    def _row_to_csv_str(seq):
+        csv_writer.writerow(seq)
+        value = buffer.getvalue().strip("\r\n")
+        buffer.seek(0)
+        buffer.truncate(0)
+        return value + "\n"
+
+    yield _row_to_csv_str((col_info[0] for col_info in conn.description))
+
+    while True:
+        try:
+            row = conn.fetchone()
+            if row is None:
+                continue
+            yield _row_to_csv_str(row)
+        except RuntimeError as e:
+            if e.args[0].startswith(
+                "Invalid Input Error: Attempting to execute an unsuccessful or closed pending query result"
+            ):
+                break
+            raise e
 
 
 class Sheet:
@@ -418,6 +463,11 @@ class Sheet:
             return res
 
         raise ValueError(f"Unsupported operation for sheet type f{type(self)}")
+
+    def iter_csv(self):
+        return _execute_query_csv_stream(
+            self.get_db_connection(), self.view, self.all_query_params()
+        )
 
 
 class FreqSheet(Sheet):

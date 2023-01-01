@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 from fastapi.responses import RedirectResponse
+from fastapi.responses import StreamingResponse
 import duckdb
 from pypika import (
     Query,
@@ -112,6 +113,25 @@ def get_sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
             num_rows=num_rows,
             **page_info,
         ),
+    )
+
+
+@app.get("/downloads/{uid}")
+def download_sheet(uid: str, file_type: str = "csv"):
+    if file_type != "csv":
+        raise HTTPException(status_code=404, detail="File type not supported")
+
+    if uid not in sheets:
+        raise HTTPException(status_code=404, detail="Sheet not found")
+
+    sheet = sheets[uid]
+    filename_without_ext = "_".join([str(s) for s in sheet.lineage])
+    filename = (filename_without_ext or "download") or ".csv"
+
+    return StreamingResponse(
+        sheet.iter_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

@@ -18,11 +18,11 @@ pre-release checklist
 * [F] mouse should hide itself
 * [F] indicator of multiline col
 * [F] don't scroll cell into view if mouse hovers over it
+* [F] load table into pandas
 
 * [BH] show total num rows and other useful info
-* [BH] some kind of pagination
-* [BH] download as csv/parquet, load table into pandas
 * [BH] show multiple datasets on homepage
+* [B] download as parquet
 * [B] col dtypes
 
 todo
