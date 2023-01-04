@@ -14,6 +14,7 @@ tbody {
 
 .table th {
   border-bottom: 0.2rem solid {{ '#0f057b' if sheet.typ == 'freq' else '#00511c' }};
+  background: white;
 }
 
 .table td, .table th {
@@ -185,6 +186,7 @@ li.breadcrumb-item a {
       </div>
       <div class="column col-10 col-xl-auto">
         <table class="table table-scroll"
+          style="border-collapse: separate;"
           x-cloak
           x-data="sheet({{ rows|length }}, {{ columns|length }}, {{ sheet.parent.uid }})"
           x-bind="

@@ -1,3 +1,14 @@
+function tableFixHead(e) {
+  const el = e.target,
+    sT = el.scrollTop;
+  el.querySelectorAll("th").forEach(th =>
+    th.style.transform = `translateY(${sT}px)`
+  );
+}
+document.querySelectorAll(".table").forEach(el =>
+  el.addEventListener("scroll", tableFixHead)
+);
+
 document.addEventListener('alpine:init', () => {
 
   function sendPostRequest(data) {
@@ -451,7 +462,7 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    '@mouseover'() {
+    '@click'() {
       this.rowidx = i
       this.colidx = j
     },
