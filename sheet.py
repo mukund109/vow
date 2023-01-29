@@ -228,7 +228,10 @@ class Sheet:
     def __getitem_cached__(self, slice_rep):
         s = slice(*slice_rep[1])
 
-        view = self.view[s]
+        limit, offset = s.stop - s.start, s.start
+        # pypika seems to have a different understanding of
+        # the start and stop attributes of a slice
+        view = self.view[offset:limit]
 
         if not isinstance(view, QueryBuilder):
             raise Exception(f"view has unexpected type {type(view)}")
