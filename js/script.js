@@ -1,6 +1,6 @@
 function tableFixHead(e) {
-  const el = e.target,
-    sT = el.scrollTop;
+  const el = e.target, sT = el.scrollTop;
+
   el.querySelectorAll("th").forEach(th =>
     th.style.transform = `translateY(${sT}px)`
   );
@@ -281,6 +281,31 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    scrollCellIntoView(i, j) {
+      // scrolls a cell with index (i,j) into view if its located near the
+      // active cell
+      const is_near_active_row = (this.rowidx <= i + 3 && this.rowidx >= i - 2)
+      const is_near_active_col = this.colidx == j
+
+      if (is_near_active_row && is_near_active_col) {
+        this.$refs[`cell-${i}-${j}`].scrollIntoView({
+          block: this.rowidx == 0 ? 'end' : 'nearest',
+          inline: 'nearest'
+        })
+      }
+
+      // scrolling behavior is a little tricky due to the floating header
+      // this code block is a hacky way to fix that behavior when scrolling
+      // from down to up
+      const is_near_header = this.rowidx <= 2
+      if (is_near_header) {
+        this.$refs['header'].scrollIntoView({
+          block: this.rowidx == 0 ? 'end' : 'nearest',
+          inline: 'nearest'
+        })
+      }
+    },
+
     toggle_multiline_col() {
       if (this.multiline_cols.has(this.colidx)) {
         this.multiline_cols.delete(this.colidx)
@@ -452,6 +477,7 @@ document.addEventListener('alpine:init', () => {
   }));
 
   Alpine.bind('cell', (i, j) => ({
+
     ':class'() {
       return {
         'filtered-val': (j in this.filter_vals) && (this.filter_vals[j].has(cellToVal(this.$refs[`cell-${i}-${j}`]))),
@@ -463,12 +489,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     'x-effect'() {
-      if (this.rowidx == i && this.colidx == j) {
-        this.$el.scrollIntoView({
-          block: this.rowidx == 0 ? 'end' : 'nearest',
-          inline: 'nearest'
-        })
-      }
+      this.scrollCellIntoView(i, j);
     },
 
     '@click'() {

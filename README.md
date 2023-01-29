@@ -12,7 +12,6 @@ bug
 pre-release checklist
 * persistent urls?
 * [FH] max width when first opening
-* [FH] active row is hidden on scroll up
 * [FH] histogram bars
 * [FH] display large numbers nicely
 * [FH] columns have the same width, to make them easier to see

@@ -195,7 +195,7 @@ li.breadcrumb-item a {
           {{ sheet.typ }}_sheet()
           {% endif %}
           ">
-            <tr>
+            <tr x-ref="header">
               {% for col in columns %}
               <th
                 x-ref="col-{{ loop.index0 }}"
