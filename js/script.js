@@ -67,7 +67,7 @@ document.addEventListener('alpine:init', () => {
     search_mode: false,
     search_input: '',
     // contains indices of columns that are rendered over multiple lines
-    multiline_cols: new Set(),
+    col_wrapping: Object.fromEntries([...Array(num_cols).keys()].map(x => [x, 'clip'])),
 
     saveStateToStorage(key = window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))
@@ -77,7 +77,7 @@ document.addEventListener('alpine:init', () => {
             rowidx: this.rowidx,
             colidx: this.colidx,
             hidden_cols: Array.from(this.hidden_cols),
-            multiline_cols: Array.from(this.multiline_cols),
+            col_wrapping: this.col_wrapping,
           })
       )
     },
@@ -93,7 +93,7 @@ document.addEventListener('alpine:init', () => {
         this.rowidx = state.rowidx
         this.colidx = state.colidx
         this.hidden_cols = new Set(state.hidden_cols)
-        this.multiline_cols = new Set(state.multiline_cols)
+        this.col_wrapping = state.col_wrapping
       }
     },
 
@@ -307,10 +307,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggle_multiline_col() {
-      if (this.multiline_cols.has(this.colidx)) {
-        this.multiline_cols.delete(this.colidx)
+      if (this.col_wrapping[this.colidx] == 'clip') {
+        this.col_wrapping[this.colidx] = 'wrap'
+      } else if (this.col_wrapping[this.colidx] == 'wrap') {
+        this.col_wrapping[this.colidx] = ''
       } else {
-        this.multiline_cols.add(this.colidx)
+        this.col_wrapping[this.colidx] = 'clip'
       }
     },
 
@@ -426,6 +428,7 @@ document.addEventListener('alpine:init', () => {
     "@keydown.window.debounce"() {
       this.saveStateToStorage()
     },
+
   });
 
   Alpine.bind('base_sheet', () => ({
@@ -484,11 +487,17 @@ document.addEventListener('alpine:init', () => {
         'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'selected-col': (this.colidx == j),
         'hidden-cell': this.hidden_cols.has(j),
-        'wrapped-cell': this.multiline_cols.has(j),
+        'clipped-cell': this.col_wrapping[j] == 'clip',
+        'wrapped-cell': this.col_wrapping[j] == 'wrap',
       }
     },
 
     'x-effect'() {
+      // watching `col_wrapping` for changes
+      // scrolls if it changes
+      this.col_wrapping[j] == 'clip';
+      this.col_wrapping[j] == 'wrap';
+
       this.scrollCellIntoView(i, j);
     },
 

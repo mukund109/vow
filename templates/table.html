@@ -46,6 +46,14 @@ td.wrapped-cell {
   white-space: normal;
 }
 
+td.clipped-cell {
+  table-layout: fixed;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 th.hidden-col {
   color: #bcbcbc00;
   background: #dededc;

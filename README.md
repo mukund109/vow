@@ -1,5 +1,7 @@
 where was i
-* implement QOL changes
+had decided that i'll temporarily avoid performance issue by removing the selected-cell class line 487 in script.js
+* chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
+  * fix performance issue
 
 design of column dropdown
 * Select column
@@ -10,7 +12,8 @@ bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
 
 pre-release checklist
-* persistent urls?
+* [FH] a new url is created even for the same view
+  * persistent urls?
 * [FH] max width when first opening
 * [FH] histogram bars
 * [FH] display large numbers nicely
