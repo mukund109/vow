@@ -1,0 +1,44 @@
+[
+  {
+    "table_name": "women_basketball",
+    "display_name": "Womens College Basketball Rosters 2022-23",
+    "date": "2022.12.14",
+    "details": "Students in Derek Willis’s “Sports Data Analysis & Visualization” course at the University of Maryland’s journalism school have assembled data on 13,000+ players on women’s college basketball teams, sourced from 900+ rosters for the 2022–23 NCAA season. Their main dataset lists each player’s name, team, position, jersey number, height, year, hometown, high school, and more."
+  },
+  {
+    "table_name": "nyc_pizza",
+    "display_name": "NYC Pizza Slices",
+    "date": "2023.01.11",
+    "details": "“Starting in 2014, I logged every slice of pizza I ate in New York City on the Instagram account NYC Slice,” writes reporter Liam Quigley, who has published a map, price chart, searchable table, and spreadsheet of the first 464 slices. The data include each slice’s date, location, style, and price. “I did not rate the slices to avoid controversy and bribes. The biggest thing I have noticed is the decline in the amount of sauce put on slices.”"
+  },
+  {
+    "table_name": "small_business_loans",
+    "display_name": "Small business loans",
+    "date": "2023.01.11",
+    "details": "The US Small Business Administration publishes loan-level data from two of its major lending programs, known as 7(a) and 504, going back to the early 1990s. The records, updated quarterly, indicate each loan’s amount, term, interest rate, approval date, and current status; borrower type, name, and location; bank name and location; and more. As seen in: The Black Wealth Data Center’s business ownership indicators. Previously: SBA data on loans provided through the pandemic-instigated Paycheck Protection Program (DIP 2020.07.08)."
+  },
+  {
+    "table_name": "automobile_recalls",
+    "display_name": "Automobile Recalls",
+    "date": "2023.01.11",
+    "details": "In the US, the National Highway Traffic Safety Administration oversees all recalls of vehicles, tires, child safety seats, and other auto equipment. Through the agency’s recall portal, you can search by vehicle identification number, make, model, and year; for other types of recalls, you can search by brand and model. The agency also provides a dataset of all 26,000+ recalls since 1966. It lists the recall type, manufacturer’s name, component, number of units potentially affected, and date the manufacturer notified NHTSA, plus descriptions of the problem, recall action, and remedy. [h/t Chartr]"
+  },
+  {
+    "table_name": "one_billionaire_donations",
+    "display_name": "MacKenzie Scott Donations",
+    "date": "2023.01.04",
+    "details": "Last month, billionaire MacKenzie Scott unveiled a website for her philanthropic efforts. It features a downloadable table that lists 1,600+ donations doled out since 2019, with each gift’s year, amount (replaced with “disclosure delayed for benefit of recipient” for 28% of entries), and recipient organization. Read more: “MacKenzie Scott reveals details of her $14bn in donations to 1,600 non-profits” (The Guardian). [h/t The Morning News]"
+  },
+  {
+    "table_name": "prison_banned_books",
+    "display_name": "Prison Banned Books",
+    "date": "2023.01.04",
+    "details": "The Marshall Project is building a database of books banned from state prisons, based on official lists that reporters requested from each state’s correctional agency. The browsable and downloadable database includes roughly 50,000 entries from 18 states so far, with plans for expansion. The fields include the book’s title, author, date banned, and reason for banning, although availability varies by state. (Disclosure: I did some contract work for this project, extracting data from PDFs.) Read more: “Why Would Prisons Ban My Book? Absurdities Rule the System,” by Marshall Project reporter Keri Blakinger. Previously: School-banned books (DIP 2022.07.06)."
+  },
+  {
+    "table_name": "mastodon_membership",
+    "display_name": "Mastodon Membership",
+    "date": "2022.12.14",
+    "details": "The open-source website instances.social tracks 16,000+ servers running Mastodon, the most prominent of the decentralized social networks seen as alternatives to Twitter. It collects each server’s domain, name, description, user count, status count, and more. Since late November, Simon Willison has been creating a longitudinal record of the site’s directory and charting the overall trend."
+  }
+]

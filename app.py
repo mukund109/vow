@@ -11,16 +11,7 @@ from pypika import (
 )
 from pypika.queries import QueryBuilder
 from utils import fetch_sample_database
-from sheet import (
-    Sheet,
-    AboutSheet,
-    Operation,
-    FreqOperation,
-    FilterOperation,
-    FacetOperation,
-    PivotOperation,
-    RegexSearchOperation,
-)
+from sheet import Sheet, AboutSheet, MasterSheet, OperationsType
 from pydantic import NonNegativeInt
 from fastapi.exceptions import HTTPException
 
@@ -32,48 +23,29 @@ templates = Jinja2Templates(directory="templates")
 fetch_sample_database()
 
 
-def get_conn():
-    conn = duckdb.connect("vow.db", read_only=True)
-    conn.execute("PRAGMA default_null_order='NULLS LAST'")
-    return conn
-
-
 # core data structure (mapping from sheet uid to Sheet)
 sheets: Dict[str, Sheet] = dict()
 
+master_sheet = MasterSheet()
+sheets["master"] = master_sheet
+sheets[master_sheet.uid] = master_sheet
 
-def _initialize_view(table: str) -> QueryBuilder:
-    return Query.from_(table).select("*")
-
-
-if "gta" not in sheets:
-    starting_sheet = Sheet(
-        _initialize_view("test_2"),
-        None,
-        desc="gta",
-        get_db_connection=get_conn,
-    )
-    sheets[starting_sheet.uid] = starting_sheet
+about_sheet = AboutSheet()
+sheets["about"] = about_sheet
+sheets[about_sheet.uid] = about_sheet
 
 
 @app.get("/")
 def index():
     # redirect to initial view
-    return RedirectResponse(url=f"/sheets/{starting_sheet.uid}")
+    return RedirectResponse(url=f"/sheets/{master_sheet.uid}")
 
 
 # passing uid in the body might be semantically more sensible
 @app.post("/sheets/{uid}")
 def post_view(
     uid: str,
-    operation: Union[
-        Operation,
-        FreqOperation,
-        FilterOperation,
-        PivotOperation,
-        FacetOperation,
-        RegexSearchOperation,
-    ],
+    operation: OperationsType,
 ):
     prev_sheet = sheets[uid]
 
@@ -85,10 +57,6 @@ def post_view(
 
 
 _MAX_NUM_ROWS = 25
-
-about_sheet = AboutSheet()
-sheets["about"] = about_sheet
-sheets[about_sheet.uid] = about_sheet
 
 
 @app.get("/sheets/{uid}")

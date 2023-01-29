@@ -1,16 +1,28 @@
 where was i
 * implement QOL changes
 
+design of column dropdown
+* Select column
+* Histogram of this column
+* Histogram of all selected columns
+
+bug
+* apostrophe in "display_name" of demo datasets throws off sql syntax
+
 pre-release checklist
+* persistent urls?
+* [FH] max width when first opening
+* [FH] active row is hidden on scroll up
 * [FH] histogram bars
+* [FH] display large numbers nicely
+* [FH] columns have the same width, to make them easier to see
+* [FH] cols should be first rendered with a default max-width with overflow set to hidden, pressing "v" should toggle between "overflow-hidden", "one-line" and "wrap", call it "Adjust width"
 * [FM] tooltip on sort sign?
 * [FM] button to open new sheet with filters
 * [FM] add buttons for toggling width of column with shortcut tooltips
 * [FM] column hover - buttons and [shortcut], and "help"
 * [FM] freeze header row
 * [FM] multi-line cols should remain multi-line after an operation
-* [F] columns have the same width, to make them easier to see
-* [F] cols should be first rendered with a default max-width with overflow set to hidden
 * [F] on zoom, sheet window size shouldn't change
 * [F] all "help" should link to command palette
 * [F] links to previous sheet to have shorter names with tooltip
@@ -19,6 +31,9 @@ pre-release checklist
 * [F] indicator of multi-line col
 * [F] don't scroll cell into view if mouse hovers over it
 * [F] load table into pandas
+* refactor - write tests
+* refactor performOp functions (some take arguments when they should be using self.<attribute>)
+* refactor, communicate with backend using actions rather than operations (e.g. openCell instead of facetOperation)
 
 * [BH] show multiple datasets on homepage
 * [B] show useful info like col-types

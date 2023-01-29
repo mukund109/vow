@@ -184,6 +184,10 @@ document.addEventListener('alpine:init', () => {
       this.performOp("fac", { 'facets': filters });
     },
 
+    performOpenOp() {
+      this.performOp("open", { 'rowid': this.rowidx });
+    },
+
     performSortOp(type) {
       // type is one of 'sa', 'sd'
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
@@ -400,7 +404,12 @@ document.addEventListener('alpine:init', () => {
   });
 
   Alpine.bind('base_sheet', () => ({
-    ...base_bindings()
+    ...base_bindings(),
+
+    '@keydown.enter.window'() {
+      if (this.search_mode) { return }
+      this.performOpenOp()
+    }
   }));
 
   function cellToVal(cell_el) {

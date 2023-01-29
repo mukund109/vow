@@ -143,14 +143,13 @@ li.breadcrumb-item a {
     <div class="columns">
       <div class="column col-1 hide-xl loading hidden" x-bind="progress()"></div>
       <ul id="parent-sheets" class="column col-9 breadcrumb">
-        <li class="breadcrumb-item">
-          <a href="#">tables</a>
-        </li>
+        {% if sheet.lineage|length > 1 %}
         {% for parent in sheet.lineage %}
         <li class="breadcrumb-item">
           <a href="/sheets/{{ parent.uid }}">{{ parent }}</a>
         </li>
         {% endfor %}
+        {% endif %}
       </ul>
       <div style="padding: 0.6rem" class="column col-2 col-ml-auto">
         <span class="navbar-links"><a href="/downloads/{{ sheet.uid }}/">Download</a><span>

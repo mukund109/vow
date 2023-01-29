@@ -1,5 +1,6 @@
 import io
 import csv
+import json
 from functools import lru_cache
 import random
 from typing import Callable, Iterator, List, Optional, Union, Tuple, Literal
@@ -18,6 +19,17 @@ from pypika import (
     Parameter,
 )
 from pydantic import BaseModel
+
+
+def load_demo_datasets():
+    with open("demo_datasets.json", "r") as f:
+        return json.load(f)
+
+
+def get_conn():
+    conn = duckdb.connect("vow.db", read_only=True)
+    conn.execute("PRAGMA default_null_order='NULLS LAST'")
+    return conn
 
 
 class FreqOperation(BaseModel):
@@ -40,6 +52,11 @@ class FilterOperation(BaseModel):
 class FacetOperation(BaseModel):
     operation_type: str = "fac"
     facets: List[Tuple[str, Optional[str]]]
+
+
+class OpenOperation(BaseModel):
+    operation_type: str = "open"
+    rowid: int
 
 
 class PivotOperation(BaseModel):
@@ -66,6 +83,7 @@ OperationsType = Union[
     RegexSearchOperation,
     PivotOperation,
     FacetOperation,
+    OpenOperation,
     FilterOperation,
     FreqOperation,
 ]
@@ -289,7 +307,13 @@ class Sheet:
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        return Sheet(res, self.source, query_params=self.query_params)
+        return Sheet(
+            res,
+            self.source,
+            desc=self.desc,
+            query_params=self.query_params,
+            get_db_connection=self.get_db_connection,
+        )
 
     def _filter_exact(
         self,
@@ -460,10 +484,16 @@ class Sheet:
                 col_name = params
                 res = self.sort(col_name, False)
             else:
-                raise ValueError("Unsupported operation")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported operation",
+                )
             return res
 
-        raise ValueError(f"Unsupported operation for sheet type f{type(self)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported operation for sheet type {self.__class__.__name__}",
+        )
 
     def iter_csv(self):
         return _execute_query_csv_stream(
@@ -583,6 +613,13 @@ class StaticSheet(Sheet):
             get_db_connection=self._create_in_memory_db,
         )
 
+    def rows_to_str(self):
+        if len(self.rows) == 0:
+            return ""
+        if len(self.rows[0]) > 1:
+            return ",".join(map(str, self.rows))
+        return ",".join(map(lambda row: f"('{row[0]}')", self.rows))
+
     def _create_in_memory_db(self):
         conn = duckdb.connect(":memory:")
         conn.execute("PRAGMA default_null_order='NULLS LAST'")
@@ -590,22 +627,39 @@ class StaticSheet(Sheet):
         col_str = ", ".join([f"{col} VARCHAR" for col in self.columns])
         # insert rows into db
         conn.execute(f"CREATE TABLE {self.name} ({col_str});")
-        conn.execute(
-            f"INSERT INTO about VALUES {','.join(map(str, self.rows))}"
-        )
+        conn.execute(f"INSERT INTO {self.name} VALUES {self.rows_to_str()}")
         return conn
 
 
 class AboutSheet(StaticSheet):
     name = "about"
-    columns = ["item", "description"]
+    columns = ["description"]
     rows = [
+        ("ShareTable is a keyboard-driven tool for exploring tabular data.",),
         (
-            "What?",
-            "A keyboard-driven tool for exploring tabular data.",
-        ),
-        (
-            "Why?",
-            "Its a quick and cheap way of sharing small-medium sized data. It removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
+            "Its a quick and cheap way of sharing small-medium sized data.\nIt removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
         ),
     ]
+
+
+class MasterSheet(StaticSheet):
+    name = "master"
+    columns = ["name", "details", "date"]
+    all_sheets = load_demo_datasets()
+    rows = [
+        (sheet["display_name"], sheet["details"], sheet["date"])
+        for sheet in all_sheets
+    ]
+
+    def run_op(self, operation: OperationsType) -> "Sheet":
+
+        if isinstance(operation, OpenOperation):
+            table_name = self.all_sheets[operation.rowid]["table_name"]
+            return Sheet(
+                Query.from_(table_name).select("*"),
+                source=self,
+                desc="gta",
+                get_db_connection=get_conn,
+            )
+
+        return super().run_op(operation)
