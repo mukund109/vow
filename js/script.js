@@ -486,7 +486,9 @@ document.addEventListener('alpine:init', () => {
     ':class'() {
       return {
         'filtered-val': (j in this.filter_vals) && (this.filter_vals[j].has(cellToVal(this.$refs[`cell-${i}-${j}`]))),
-        'selected-cell': (this.rowidx == i) && (this.colidx == j),
+        // this is commented out due to performance reasons
+        // will try to find another approach later
+        // 'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'selected-col': (this.colidx == j),
         'hidden-cell': this.hidden_cols.has(j),
         'clipped-cell': this.col_wrapping[j] == 'clip',

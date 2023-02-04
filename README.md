@@ -1,7 +1,6 @@
 where was i
-had decided that i'll temporarily avoid performance issue by removing the selected-cell class line 487 in script.js
+* remove columns from "Small business loan table for perf reasons"
 * chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
-  * fix performance issue
 
 design of column dropdown
 * Select column
@@ -12,18 +11,14 @@ bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
 
 pre-release checklist
-* [FH] a new url is created even for the same view
-  * persistent urls?
 * [FH] max width when first opening
 * [FH] histogram bars
 * [FH] display large numbers nicely
 * [FH] columns have the same width, to make them easier to see
-* [FH] cols should be first rendered with a default max-width with overflow set to hidden, pressing "v" should toggle between "overflow-hidden", "one-line" and "wrap", call it "Adjust width"
 * [FM] tooltip on sort sign?
 * [FM] button to open new sheet with filters
 * [FM] add buttons for toggling width of column with shortcut tooltips
 * [FM] column hover - buttons and [shortcut], and "help"
-* [FM] freeze header row
 * [FM] multi-line cols should remain multi-line after an operation
 * [F] on zoom, sheet window size shouldn't change
 * [F] all "help" should link to command palette
@@ -37,7 +32,9 @@ pre-release checklist
 * refactor performOp functions (some take arguments when they should be using self.<attribute>)
 * refactor, communicate with backend using actions rather than operations (e.g. openCell instead of facetOperation)
 
-* [BH] show multiple datasets on homepage
+* [BH] call them tables instead of sheets (will need to change url)
+* [BH] a new url is created even for the same view
+  * persistent urls?
 * [B] show useful info like col-types
 * [B] download as parquet
 * [B] col dtypes
