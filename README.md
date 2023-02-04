@@ -10,9 +10,13 @@ design of column dropdown
 bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
 
+* explore
+  * yattag for generating html instead of using Jinja template
+  * row numbers (duckdb row_numbers())
+  * make histogram cover entire row in freq sheet (was having trouble getting the css right, the color of the td element was taking precedence over color of tr)
+
 pre-release checklist
 * [FH] max width when first opening
-* [FH] histogram bars
 * [FH] display large numbers nicely
 * [FH] columns have the same width, to make them easier to see
 * [FM] tooltip on sort sign?

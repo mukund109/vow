@@ -7,8 +7,8 @@ from typing import Callable, Iterator, List, Optional, Union, Tuple, Literal
 from duckdb import DuckDBPyConnection
 import duckdb
 from fastapi import HTTPException
-from pypika.queries import QueryBuilder
-from pypika.functions import Count, Max
+from pypika.queries import Column, QueryBuilder
+from pypika.functions import Cast, Count, Max, Sum
 from pypika.enums import Order
 from pypika import (
     Query,
@@ -17,6 +17,7 @@ from pypika import (
     Criterion,
     CustomFunction,
     Parameter,
+    analytics,
 )
 from pydantic import BaseModel
 
@@ -302,8 +303,18 @@ class Sheet:
         # By doing I can use "num_rows" as the field to sort on, and can access
         # it from self.orderbys
         # TODO: make a test case for this
+        num_rows = Column("num_rows")
+        percentage = (
+            100 * Cast(num_rows, "REAL") / analytics.Sum(num_rows).over()
+        )
+        percentage = percentage.as_("percentage")
         res = (
-            Query.from_(res).select("*").orderby("num_rows", order=Order.desc)
+            Query.from_(res)
+            .select(
+                "*",
+                percentage,
+            )
+            .orderby("num_rows", order=Order.desc)
         )
         return FreqSheet(res, key_cols=cols, source=self, desc="freq")
 

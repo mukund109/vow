@@ -59,6 +59,10 @@ def post_view(
 _MAX_NUM_ROWS = 25
 
 
+def _prettify_floats(row):
+    return [f"{x:.2f}" if isinstance(x, float) else x for x in row]
+
+
 @app.get("/sheets/{uid}")
 def sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
 
@@ -67,6 +71,7 @@ def sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
 
     sheet = sheets[uid]
     rows, columns = sheet[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
+    rows = [_prettify_floats(row) for row in rows]
     num_rows = len(sheet)
 
     page_info = {

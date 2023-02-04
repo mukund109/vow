@@ -75,6 +75,11 @@ td.hidden-cell {
   background: {{ '#cad4e3' if sheet.typ == 'freq' else '#c2c8c0' }};
 }
 
+td.percentage {
+  background-image: linear-gradient(rgb(0, 0, 0, 0) 0%, rgb(0, 0, 0, 0) 75%, rgb(153, 172, 247) 76%, rgb(153, 172, 247) 100%);  /* your gradient */
+  background-repeat: no-repeat;
+}
+
 .selected-col {
   background: {{ '#eef0f3' if sheet.typ == 'freq' else '#dfe7ea' }};
 }
@@ -251,8 +256,16 @@ li.breadcrumb-item a {
                 class="
                 {% if row[loop.index0] is none %}
                 null
+                {% elif col == 'percentage' %}
+                percentage
                 {% endif %}
-                ">
+                "
+                style="
+                {% if col == 'percentage' %}
+                background-size: {{ row[loop.index0] }}% 100%;
+                {% endif %}
+                "
+                >
               {% if row[loop.index0] is none %}
                 NaN
               {% else %}
