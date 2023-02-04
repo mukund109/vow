@@ -93,7 +93,9 @@ document.addEventListener('alpine:init', () => {
         this.rowidx = state.rowidx
         this.colidx = state.colidx
         this.hidden_cols = new Set(state.hidden_cols)
-        this.col_wrapping = state.col_wrapping
+        if (state.col_wrapping) {
+          this.col_wrapping = state.col_wrapping
+        }
       }
     },
 
