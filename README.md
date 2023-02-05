@@ -9,14 +9,22 @@ design of column dropdown
 
 bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
+* facet operation fails when filter value has space in it e.g. 'F '
+  * https_rank of mastodon sheet
+* facet operation fails when filter value is integer
 
 * explore
   * yattag for generating html instead of using Jinja template
   * row numbers (duckdb row_numbers())
   * make histogram cover entire row in freq sheet (was having trouble getting the css right, the color of the td element was taking precedence over color of tr)
+slightly bigger challenges
+  * versioning javascript files
+  * if html is cached for a long time, how will html/js updates happen on client side?
+  * wrapped_col_indices implementation seems brittle, need a straightforward way of specifying state on server, same with key_cols implementation
+    * col should be wrapped even if js is not loaded
 
+make tables immutable? and cache the f out of them
 pre-release checklist
-* [FH] max width when first opening
 * [FH] display large numbers nicely
 * [FH] columns have the same width, to make them easier to see
 * [FM] tooltip on sort sign?
@@ -37,6 +45,7 @@ pre-release checklist
 * refactor, communicate with backend using actions rather than operations (e.g. openCell instead of facetOperation)
 
 * [BH] call them tables instead of sheets (will need to change url)
+  * implement Cache-control
 * [BH] a new url is created even for the same view
   * persistent urls?
 * [B] show useful info like col-types

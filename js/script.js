@@ -57,7 +57,7 @@ document.addEventListener('alpine:init', () => {
     }
   }))
 
-  Alpine.data('sheet', (num_rows, num_cols, parent_sheet_id) => ({
+  Alpine.data('sheet', (num_rows, num_cols, parent_sheet_id, wrapped_col_indices) => ({
     rowidx: 0,
     colidx: 0,
     key_cols: [], // contains indices
@@ -67,7 +67,7 @@ document.addEventListener('alpine:init', () => {
     search_mode: false,
     search_input: '',
     // contains indices of columns that are rendered over multiple lines
-    col_wrapping: Object.fromEntries([...Array(num_cols).keys()].map(x => [x, 'clip'])),
+    col_wrapping: Object.fromEntries([...Array(num_cols).keys()].map(x => [x, wrapped_col_indices.includes(x) ? 'wrap' : 'clip'])),
 
     saveStateToStorage(key = window.location.pathname) {
       // localStorage.setItem(window.location.pathname, JSON.stringify({rowidx: this.rowidx, colidx: this.colidx}))

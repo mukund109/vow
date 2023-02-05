@@ -174,6 +174,8 @@ def _execute_query_csv_stream(
 
 
 class Sheet:
+    wrapped_col_indices = []
+
     def __init__(
         self,
         view: QueryBuilder,
@@ -603,6 +605,14 @@ class FreqSheet(Sheet):
     def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
 
+    @property
+    def wrapped_col_indices(self) -> List[int]:
+        return (
+            [self.columns.index("percentage")]
+            if "percentage" in self.columns
+            else []
+        )
+
     def run_op(
         self,
         operation: OperationsType,
@@ -648,6 +658,7 @@ class StaticSheet(Sheet):
 class AboutSheet(StaticSheet):
     name = "about"
     columns = ["description"]
+    wrapped_col_indices = [0]
     rows = [
         ("ShareTable is a keyboard-driven tool for exploring tabular data.",),
         (
@@ -659,6 +670,7 @@ class AboutSheet(StaticSheet):
 class MasterSheet(StaticSheet):
     name = "master"
     columns = ["name", "details", "date"]
+    wrapped_col_indices = [1]
     all_sheets = load_demo_datasets()
     rows = [
         (sheet["display_name"], sheet["details"], sheet["date"])

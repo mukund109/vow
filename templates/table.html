@@ -200,7 +200,7 @@ li.breadcrumb-item a {
         <table class="table table-scroll"
           style="border-collapse: separate;"
           x-cloak
-          x-data="sheet({{ rows|length }}, {{ columns|length }}, {{ sheet.parent.uid }})"
+          x-data="sheet({{ rows|length }}, {{ columns|length }}, {{ sheet.parent.uid }}, {{ sheet.wrapped_col_indices }})"
           x-bind="
           {% if sheet.typ == 'freq' %}
           {{ sheet.typ }}_sheet({{ sheet.key_col_indices }})
