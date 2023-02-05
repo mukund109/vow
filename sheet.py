@@ -102,6 +102,39 @@ def _uniqueid():
 _unique_sequence = _uniqueid()
 
 
+def _get_schema_for_view(
+    conn: DuckDBPyConnection,
+    view: QueryBuilder,
+    query_params: Optional[List[str]] = None,
+) -> List[Tuple[str, str]]:
+
+    query = f"""
+    CREATE TEMP VIEW temp_view AS ({view.get_sql()});
+    PRAGMA table_info(temp_view)
+    """
+
+    if query_params is None:
+        query_params = []
+
+    try:
+        conn.execute(query, query_params)
+    except RuntimeError as e:
+        print(query)
+        raise e
+
+    try:
+        rows = conn.fetchall()
+
+    except RuntimeError as e:
+        if e.args[0] == "no open result set":
+            return []
+        else:
+            raise e
+
+    names_and_types = [(row[1], row[2]) for row in rows]
+    return names_and_types
+
+
 def _execute_query(
     conn: DuckDBPyConnection,
     view: QueryBuilder,
@@ -204,6 +237,12 @@ class Sheet:
         }
 
         self.get_db_connection = self._infer_db(get_db_connection)
+        columns_types = _get_schema_for_view(
+            self.get_db_connection(),
+            self.view,
+            query_params=self.query_params,
+        )
+        self.columns = [ct[0] for ct in columns_types]
 
     def __len__(self):
 
@@ -243,7 +282,6 @@ class Sheet:
             view,
             query_params=self.all_query_params(),
         )
-        self.columns = columns
         return rows, columns
 
     def __getitem__(self, s):
