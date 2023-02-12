@@ -1,0 +1,181 @@
+body {
+  color: #000;
+  font-family: 'Assistant', sans-serif;
+}
+
+table {
+  height: 90vh;
+}
+
+tbody {
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table th {
+  background: white;
+}
+
+.basic-table th {
+  border-bottom: 0.2rem solid #00511c;
+}
+
+.freq-table th {
+  border-bottom: 0.2rem solid #0f057b;
+}
+
+.table td, .table th {
+  padding: 0.4rem 0.4rem;
+}
+
+.loading-table {
+  color: grey;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+.filtered-val {
+  color: #604d02;
+}
+
+.filtered td {
+  color: #bcbcbc;
+}
+
+.null {
+  color: #c42b2b;
+}
+
+td.wrapped-cell {
+  min-width: 300px;
+  white-space: normal;
+}
+
+td.clipped-cell {
+  table-layout: fixed;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th.hidden-col {
+  color: #bcbcbc00;
+  background: #dededc;
+  overflow: hidden;
+  width: 15px;
+  max-width: 15px;
+}
+
+td.hidden-cell {
+  color: #bcbcbc00;
+  overflow: hidden;
+  width: 0px;
+  max-width: 0px;
+  min-width: 0px;
+  white-space: unset;
+}
+
+.basic-table .active td {
+  background: #c2c8c0;
+}
+
+.freq-table .active td {
+  background: #cad4e3;
+}
+
+.table td.percentage {
+  background-image: linear-gradient(rgb(0, 0, 0, 0) 0%, rgb(0, 0, 0, 0) 75%, rgb(153, 172, 247) 76%, rgb(153, 172, 247) 100%);  /* your gradient */
+  background-repeat: no-repeat;
+}
+
+.basic-table .selected-col {
+  background: #dfe7ea;
+}
+
+.freq-table .selected-col {
+  background: #eef0f3;
+}
+
+th.key-col {
+  background: #9b86ff;
+}
+
+th.agg-col {
+  background: #ff2b85;
+}
+
+.basic-table  td.selected-cell {
+  background: #b7c8b5;
+}
+
+.freq-table td.selected-cell {
+  background: #d4ddf7;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.progress {
+  width: 100%;
+}
+
+.progress:indeterminate {
+  background-image: linear-gradient(to right, grey 30%, rgb(238, 240, 243) 30%);
+}
+
+.sorted-col {
+  background-color: #ededec;
+}
+
+li.breadcrumb-item a {
+  color: grey;
+}
+
+.close-btn {
+  background-color: white;
+  border: none;
+  color: black;
+  padding: 0px 0px 0px 7px;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+#table-footer {
+  margin: 0.5rem 0;
+  background-color: whitesmoke;
+}
+
+#parent-sheets {
+  padding: 0.2rem 0.5rem;
+}
+
+.navbar-links {
+  margin-left: 0.5rem;
+}
+.navbar-links a {
+  color: grey;
+}
+
+#cheatsheet {
+  margin: 2rem 0rem;
+  color: grey;
+  font-size: 0.7rem;
+  font-family: 'Courier New', monospace;
+}
+
+#hints {
+  padding-right: 0.5rem;
+}
+
+#hints button {
+  float: right;
+}
+
+.btn {
+  color: green;
+  border-color: green;
+}

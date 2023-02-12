@@ -142,12 +142,24 @@ li.breadcrumb-item a {
 }
 
 #cheatsheet {
-  margin: 3rem 1rem;
+  margin: 2rem 0rem;
   color: grey;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-family: 'Courier New', monospace;
 }
 
+#hints {
+  padding-right: 0.5rem;
+}
+
+#hints button {
+  float: right;
+}
+
+.btn {
+  color: green;
+  border-color: green;
+}
 
 </style>
 <div id="table-parent" x-data="sheet_parent()" x-bind="sheet_parent_bind()">
@@ -172,31 +184,19 @@ li.breadcrumb-item a {
       </div>
     </div>
 
-    <div class="columns">
+    <div class="columns col-gapless">
       <div class="column col-1 hide-xl">
-        <div id="cheatsheet">
-          <p><span class="label">?</span> hide cheatsheet</p>
-          <p> Arrow /
-            <span class="label">j</span>
-            <span class="label">k</span>
-            <span class="label">h</span>
-            <span class="label">l</span>
-          navigate
-          </p>
-          <p><span class="label">F</span> frequency</p>
-          <p>
-            <span class="label">q</span> back
-            <br/>
-            <span class="label">p</span> forward
-          </p>
-          <p>
-            <span class="label">]</span> sort desc
-            <br/>
-            <span class="label">[</span> sort asc
-          </p>
+        <div id="hints">
+          <button
+            style="display: none"
+            x-bind="enter_hint"
+            class="btn btn-sm">
+            Open <span class="label">[Enter]</span>
+          </button>
+
         </div>
       </div>
-      <div class="column col-10 col-xl-auto">
+      <div class="column col-10">
         <table class="table table-scroll"
           style="border-collapse: separate;"
           x-cloak
@@ -248,7 +248,9 @@ li.breadcrumb-item a {
           {% set outerloop = loop %}
           <tr
             x-bind="row({{ loop.index0 }})"
-            x-ref="row-{{ outerloop.index0 }}" >
+            x-ref="row-{{ outerloop.index0 }}"
+            style="cursor: pointer;"
+            >
 
             {% for col in columns %}
             <td x-ref="cell-{{ outerloop.index0 }}-{{ loop.index0 }}"
@@ -293,8 +295,31 @@ li.breadcrumb-item a {
             {% endif %}
             <span class="label">[N]</span>
           </span>
-        <div>
+        </div>
       </div>
+
+      <div id="cheatsheet" class="column col-1 hide-xl">
+        <p><span class="label">?</span> hide cheatsheet</p>
+        <p> Arrow /
+          <span class="label">j</span>
+          <span class="label">k</span>
+          <span class="label">h</span>
+          <span class="label">l</span>
+        navigate
+        </p>
+        <p><span class="label">F</span> frequency</p>
+        <p>
+          <span class="label">q</span> back
+          <br/>
+          <span class="label">p</span> forward
+        </p>
+        <p>
+          <span class="label">]</span> sort desc
+          <br/>
+          <span class="label">[</span> sort asc
+        </p>
+      </div>
+
     </div>
   </div>
 </div>

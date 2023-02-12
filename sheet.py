@@ -244,6 +244,7 @@ class Sheet:
         )
         self.columns = [ct[0] for ct in columns_types]
 
+    @lru_cache
     def __len__(self):
 
         view = Query.from_(self.view).select(

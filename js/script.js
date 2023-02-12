@@ -36,13 +36,17 @@ document.addEventListener('alpine:init', () => {
   function openPrevPage() {
     document.getElementById('previous-page').click()
   }
+  Alpine.store('main', {
+    activeRowOffset: -1,
+  })
 
   Alpine.data('sheet_parent', () => ({
     loading: false,
 
     init() {
       this.loading = false
-    }
+    },
+
   }))
   Alpine.bind('sheet_parent_bind', () => ({
     ':class'() {
@@ -50,6 +54,7 @@ document.addEventListener('alpine:init', () => {
       return this.loading ? 'loading-table' : ''
     }
   }))
+
   Alpine.bind('progress', () => ({
     ':class'() {
       // when not loading, hides the progress bar
@@ -429,8 +434,7 @@ document.addEventListener('alpine:init', () => {
     // after a delay of 250ms
     "@keydown.window.debounce"() {
       this.saveStateToStorage()
-    },
-
+    }
   });
 
   Alpine.bind('base_sheet', () => ({
@@ -439,7 +443,8 @@ document.addEventListener('alpine:init', () => {
     '@keydown.enter.window'() {
       if (this.search_mode) { return }
       this.performOpenOp()
-    }
+    },
+
   }));
 
   function cellToVal(cell_el) {
@@ -457,7 +462,8 @@ document.addEventListener('alpine:init', () => {
     '@keydown.enter.window'() {
       if (this.search_mode) { return }
       this.performFacetOp(key_cols)
-    }
+    },
+
   }));
 
   Alpine.bind('row', (idx) => ({
@@ -466,7 +472,17 @@ document.addEventListener('alpine:init', () => {
         'active': this.rowidx == idx,
         'filtered': (!this.search_mode & this.is_filtered(idx)) | (this.search_mode & !this.is_search_match(idx)),
       }
-    }
+    },
+
+    'x-init'() {
+      this.$nextTick(() => {
+        if (this.rowidx == idx) {
+
+          this.$store.main.activeRowOffset = window.pageXOffset + this.$el.getBoundingClientRect().top
+        }
+      })
+    },
+
   }));
 
   Alpine.bind('col', (j) => ({
@@ -503,6 +519,8 @@ document.addEventListener('alpine:init', () => {
       this.col_wrapping[j] == 'wrap';
 
       this.scrollCellIntoView(i, j);
+      const activeRow = this.$refs[`row-${this.rowidx}`]
+      this.$store.main.activeRowOffset = window.pageXOffset + activeRow.getBoundingClientRect().top
     },
 
     '@click'() {
@@ -563,4 +581,20 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 
+  Alpine.bind('enter_hint', () => ({
+    ':style'() {
+
+      return {
+        'transform': `translateY(${this.$store.main.activeRowOffset - 42}px)`
+      }
+    },
+
+    'x-show'() {
+      return this.$store.main.activeRowOffset > 0
+    },
+
+    'x-on:click'() {
+      window.dispatchEvent(new KeyboardEvent('keydown', { 'key': 'enter' }));
+    }
+  }));
 });

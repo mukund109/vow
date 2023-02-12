@@ -1,4 +1,6 @@
 where was i
+* only have enter button show up on certain sheets
+* add more buttons (facet button, filter '"' button, regex search 2 buttons - enter and escape)
 * remove columns from "Small business loan table for perf reasons"
 * chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
 
@@ -22,11 +24,11 @@ slightly bigger challenges
   * if html is cached for a long time, how will html/js updates happen on client side?
   * wrapped_col_indices implementation seems brittle, need a straightforward way of specifying state on server, same with key_cols implementation
     * col should be wrapped even if js is not loaded
+  * use $persist and $scroll provided by alpinejs
 
 make tables immutable? and cache the f out of them
 pre-release checklist
 * [FH] display large numbers nicely
-* [FH] columns have the same width, to make them easier to see
 * [FM] tooltip on sort sign?
 * [FM] button to open new sheet with filters
 * [FM] add buttons for toggling width of column with shortcut tooltips

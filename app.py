@@ -1,19 +1,15 @@
-from typing import Dict, Union
+from typing import Dict
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi import Request
 from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
-import duckdb
-from pypika import (
-    Query,
-)
-from pypika.queries import QueryBuilder
+from fastapi.responses import HTMLResponse
 from utils import fetch_sample_database
 from sheet import Sheet, AboutSheet, MasterSheet, OperationsType
 from pydantic import NonNegativeInt
 from fastapi.exceptions import HTTPException
+from view import html_page
 
 # create a flask application
 app = FastAPI()
@@ -56,44 +52,17 @@ def post_view(
     return {"new_sheet": new_sheet.uid, "yolo": "Success"}
 
 
-_MAX_NUM_ROWS = 25
-
-
-def _prettify_floats(row):
-    return [f"{x:.2f}" if isinstance(x, float) else x for x in row]
-
-
 @app.get("/sheets/{uid}")
-def sheet_by_uid(request: Request, uid: str, page: NonNegativeInt = 0):
+def sheet_by_uid(uid: str, page: NonNegativeInt = 0):
 
     if uid not in sheets:
         raise HTTPException(status_code=404, detail="Sheet not found")
 
     sheet = sheets[uid]
-    rows, columns = sheet[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
-    rows = [_prettify_floats(row) for row in rows]
-    num_rows = len(sheet)
-
-    page_info = {
-        "has_prev_page": page > 0,
-        "has_next_page": (page + 1) * _MAX_NUM_ROWS < num_rows,
-        "page": page,
-    }
-
-    return templates.TemplateResponse(
-        "table.html",
-        dict(
-            request=request,
-            rows=rows,
-            columns=columns,
-            sheet=sheet,
-            num_rows=num_rows,
-            **page_info,
-        ),
-    )
+    return HTMLResponse(content=html_page(sheet, page=page), status_code=200)
 
 
-@app.get("/about")
+@app.get("/about", response_class=HTMLResponse)
 def about():
     return RedirectResponse(url=f"/sheets/about")
 
