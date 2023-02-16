@@ -151,6 +151,7 @@ def _execute_query(
         print(sql_query)
         raise e
 
+    columns = [col[0] for col in conn.description]
     try:
         rows = conn.fetchall()
 
@@ -160,7 +161,6 @@ def _execute_query(
         else:
             raise e
 
-    columns = [col[0] for col in conn.description]
     return rows, columns
 
 

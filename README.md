@@ -1,4 +1,6 @@
 where was i
+* search is broken
+  * enter gets pressed twice accidentally
 * only have enter button show up on certain sheets
 * add more buttons (facet button, filter '"' button, regex search 2 buttons - enter and escape)
 * remove columns from "Small business loan table for perf reasons"
@@ -15,6 +17,7 @@ bug
   * https_rank of mastodon sheet
 * facet operation fails when filter value is integer
 
+
 * explore
   * yattag for generating html instead of using Jinja template
   * row numbers (duckdb row_numbers())
@@ -25,6 +28,8 @@ slightly bigger challenges
   * wrapped_col_indices implementation seems brittle, need a straightforward way of specifying state on server, same with key_cols implementation
     * col should be wrapped even if js is not loaded
   * use $persist and $scroll provided by alpinejs
+  * way to embed table in html
+  * write some blogs with embedded table
 
 make tables immutable? and cache the f out of them
 pre-release checklist

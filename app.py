@@ -1,6 +1,5 @@
 from typing import Dict
 from fastapi import FastAPI
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
@@ -14,7 +13,6 @@ from view import html_page
 # create a flask application
 app = FastAPI()
 # set the template directory
-templates = Jinja2Templates(directory="templates")
 
 fetch_sample_database()
 
