@@ -441,7 +441,9 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings(),
 
     '@keydown.enter.window'() {
-      if (this.search_mode) { return }
+      if (this.search_mode || this.loading) {
+        return
+      }
       this.performOpenOp()
     },
 
@@ -460,7 +462,7 @@ document.addEventListener('alpine:init', () => {
     ...base_bindings(),
 
     '@keydown.enter.window'() {
-      if (this.search_mode) { return }
+      if (this.search_mode || this.loading) { return }
       this.performFacetOp(key_cols)
     },
 

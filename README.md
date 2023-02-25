@@ -1,9 +1,4 @@
 where was i
-* was converting all Sheet and subclasses to dataclasses so that its easier to serialize them in a consistent manner
-  * sheet.load() doesn't work for static sheets
-  * think about how to hash (hexadecimal hash)
-* search is broken
-  * enter gets pressed twice accidentally
 * only have enter button show up on certain sheets
 * add more buttons (facet button, filter '"' button, regex search 2 buttons - enter and escape)
 * remove columns from "Small business loan table for perf reasons"

@@ -7,7 +7,6 @@ from dataclasses import asdict, dataclass, field, fields
 from functools import lru_cache
 from typing import (
     Any,
-    Callable,
     Dict,
     Iterator,
     List,
@@ -149,31 +148,18 @@ def _get_schema_for_view(
     query_params: Optional[List[str]] = None,
 ) -> List[Tuple[str, str]]:
 
-    query = f"""
-    CREATE TEMP VIEW temp_view AS ({view.get_sql()});
-    PRAGMA table_info(temp_view)
-    """
-
     if query_params is None:
         query_params = []
 
     try:
-        conn.execute(query, query_params)
-    except RuntimeError as e:
-        print(query)
+        conn.execute(view.get_sql(), query_params)
+    except Exception as e:
+        print(view, query_params)
         raise e
 
-    try:
-        rows = conn.fetchall()
+    columns = [(col[0], col[1]) for col in conn.description]
 
-    except RuntimeError as e:
-        if e.args[0] == "no open result set":
-            return []
-        else:
-            raise e
-
-    names_and_types = [(row[1], row[2]) for row in rows]
-    return names_and_types
+    return columns
 
 
 def _execute_query(
@@ -188,7 +174,7 @@ def _execute_query(
 
     try:
         conn.execute(sql_query, query_params)
-    except RuntimeError as e:
+    except Exception as e:
         print(sql_query)
         raise e
 
