@@ -173,6 +173,7 @@ li.breadcrumb-item a {
 
 #hints button {
   float: right;
+  margin-top: 0.5rem;
 }
 
 .btn {

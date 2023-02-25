@@ -1,6 +1,7 @@
+markdown sheet
+
 where was i
-* only have enter button show up on certain sheets
-* add more buttons (facet button, filter '"' button, regex search 2 buttons - enter and escape)
+* add more buttons (regex search 2 buttons - enter and escape)
 * remove columns from "Small business loan table for perf reasons"
 * chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
 

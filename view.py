@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from yattag.doc import Doc
-from sheet import Sheet, FreqSheet
+from sheet import Sheet, FreqSheet, SheetOfSheets
 
 
 def html_lineage(s: Sheet):
@@ -26,15 +26,36 @@ def html_navbar(s: Sheet):
 
 def html_hints(s: Sheet):
     doc, tag, text = Doc().tagtext()
-    with tag("div", id="hints"):
+    with tag(
+        "div", ("x-bind", "hints_sidebar"), id="hints", style="display: none;"
+    ):
+        if isinstance(s, FreqSheet) or isinstance(s, SheetOfSheets):
+            hint_text = "Facet" if isinstance(s, FreqSheet) else "Open Sheet"
+            with tag(
+                "button",
+                ("x-bind", "open_hint"),
+                style="display: none;",
+                klass="btn btn-sm",
+            ):
+                text(f"{hint_text} ")
+                doc.line("span", "Enter", klass="label")
         with tag(
             "button",
-            ("x-bind", "enter_hint"),
+            ("x-bind", "filter_hint"),
             style="display: none;",
             klass="btn btn-sm",
         ):
-            text("Open ")
-            doc.line("span", "[Enter]", klass="label")
+            text(f"Filter ")
+            doc.line("span", '"', klass="label")
+
+        with tag(
+            "button",
+            ("x-bind", "freq_hint"),
+            style="display: none;",
+            klass="btn btn-sm",
+        ):
+            text(f"Histogram ")
+            doc.line("span", "f", klass="label")
     return doc.getvalue()
 
 
@@ -72,6 +93,7 @@ def html_search_row(s: Sheet):
                         klass="form-input",
                         type="text",
                         style="display: inline",
+                        placeholder="Press [Enter] to search",
                     )
                     with tag(
                         "button",
@@ -170,7 +192,7 @@ def html_footer(s: Sheet, page: int = 0):
                 text("prev")
 
             doc.line("span", "[P]", klass="label")
-            text("|")
+            text("| ")
 
             if has_next_page:
                 doc.line(

@@ -42,6 +42,9 @@ document.addEventListener('alpine:init', () => {
 
   Alpine.data('sheet_parent', () => ({
     loading: false,
+    filter_vals: {}, // contains { column_index: [val1, val2], ... }
+    key_cols: [], // contains indices
+    search_mode: false,
 
     init() {
       this.loading = false
@@ -65,11 +68,8 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('sheet', (num_rows, num_cols, parent_sheet_id, wrapped_col_indices) => ({
     rowidx: 0,
     colidx: 0,
-    key_cols: [], // contains indices
-    filter_vals: {}, // contains { column_index: [val1, val2], ... }
     hidden_cols: new Set(), // contains indices of hidden columns
     agg_col: undefined,
-    search_mode: false,
     search_input: '',
     // contains indices of columns that are rendered over multiple lines
     col_wrapping: Object.fromEntries([...Array(num_cols).keys()].map(x => [x, wrapped_col_indices.includes(x) ? 'wrap' : 'clip'])),
@@ -583,20 +583,49 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 
-  Alpine.bind('enter_hint', () => ({
-    ':style'() {
-
-      return {
-        'transform': `translateY(${this.$store.main.activeRowOffset - 42}px)`
-      }
-    },
-
+  Alpine.bind('hints_sidebar', () => ({
     'x-show'() {
       return this.$store.main.activeRowOffset > 0
     },
 
+    ':style'() {
+
+      return {
+        'transform': `translateY(${this.$store.main.activeRowOffset - 50}px)`
+      }
+    },
+  }));
+
+  Alpine.bind('open_hint', () => ({
+    'x-show'() {
+
+      const filters_active = Object.keys(this.filter_vals).length !== 0
+      return !this.search_mode && !filters_active
+    },
     'x-on:click'() {
       window.dispatchEvent(new KeyboardEvent('keydown', { 'key': 'enter' }));
+    }
+  }));
+
+  Alpine.bind('filter_hint', () => ({
+    'x-show'() {
+      const filters_active = Object.keys(this.filter_vals).length !== 0
+      return filters_active && !this.search_mode
+    },
+
+    'x-on:click'() {
+      window.dispatchEvent(new KeyboardEvent('keydown', { 'key': '"' }));
+    }
+  }));
+
+  Alpine.bind('freq_hint', () => ({
+    'x-show'() {
+      const key_cols_selected = Object.keys(this.key_cols).length !== 0
+      return key_cols_selected && !this.search_mode
+    },
+
+    'x-on:click'() {
+      window.dispatchEvent(new KeyboardEvent('keydown', { 'key': '"' }));
     }
   }));
 });
