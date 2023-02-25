@@ -9,7 +9,8 @@ def html_lineage(s: Sheet):
         if len(s.lineage) > 1:
             for parent in s.lineage:
                 with tag("li", klass="breadcrumb-item"):
-                    doc.line("a", str(parent), href=f"/sheets/{parent.uid}")
+                    id_ = parent.name or parent.uid
+                    doc.line("a", str(parent), href=f"/sheets/{id_}")
     return doc.getvalue()
 
 
@@ -131,11 +132,11 @@ def html_table(s: Sheet, page: int):
         style="border-collapse: separate;",
     ):
         num_cols = len(s.columns)
-        parent_uid = s.parent.uid if s.parent else "none"
+        parent_uid: str = s.parent.uid if s.parent else "none"
         doc.attr(
             (
                 "x-data",
-                f"sheet({len(rows)}, {num_cols}, {parent_uid}, {s.wrapped_col_indices})",
+                f"sheet({len(rows)}, {num_cols}, '{parent_uid}', {s.wrapped_col_indices})",
             )
         )
         if isinstance(s, FreqSheet):

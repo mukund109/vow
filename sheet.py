@@ -1,14 +1,26 @@
 import io
 import csv
 import json
+import pickle
+import hashlib
+from dataclasses import asdict, dataclass, field, fields
 from functools import lru_cache
-import random
-from typing import Callable, Iterator, List, Optional, Union, Tuple, Literal
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Union,
+    Tuple,
+    Literal,
+)
 from duckdb import DuckDBPyConnection
 import duckdb
 from fastapi import HTTPException
 from pypika.queries import Column, QueryBuilder
-from pypika.functions import Cast, Count, Max, Sum
+from pypika.functions import Cast, Count, Max
 from pypika.enums import Order
 from pypika import (
     Query,
@@ -27,10 +39,49 @@ def load_demo_datasets():
         return json.load(f)
 
 
-def get_conn():
+DBType = Literal["memory", "disk"]
+
+
+def get_conn() -> DuckDBPyConnection:
     conn = duckdb.connect("vow.db", read_only=True)
     conn.execute("PRAGMA default_null_order='NULLS LAST'")
     return conn
+
+
+_conn_memory = duckdb.connect(":memory:")
+_conn_memory.execute("PRAGMA default_null_order='NULLS LAST'")
+
+
+def get_in_memory_conn() -> DuckDBPyConnection:
+    return _conn_memory.cursor()
+
+
+class Store:
+    # TODO: for aliases/names, don't store copies
+    # store a pointer to uid?
+    def __init__(self):
+        self.in_memory_db: Dict[str, Any] = {}
+        self.db: Dict[str, bytes] = {}
+
+    def put_in_memory(self, key: str, obj: Any):
+        self.in_memory_db[key] = obj
+
+    def put(self, key: str, obj: bytes):
+        self.db[key] = obj
+
+    def get(self, key: str) -> Any:
+        if key in self.in_memory_db:
+            return self.in_memory_db[key]
+
+        return self.db[key]
+
+    def __repr__(self) -> str:
+        return (
+            f"In-memory: {self.in_memory_db.keys()}\nOthers: {self.db.keys()}"
+        )
+
+
+sheet_store = Store()
 
 
 class FreqOperation(BaseModel):
@@ -90,16 +141,6 @@ OperationsType = Union[
 ]
 
 regexp_matches = CustomFunction("regexp_matches", ["string", "regex"])
-
-
-def _uniqueid():
-    seed = random.getrandbits(32)
-    while True:
-        yield str(seed)
-        seed += 1
-
-
-_unique_sequence = _uniqueid()
 
 
 def _get_schema_for_view(
@@ -206,45 +247,87 @@ def _execute_query_csv_stream(
             raise e
 
 
+@dataclass(kw_only=True, eq=False)
 class Sheet:
-    wrapped_col_indices = []
+    uid: str = field(init=False)
+    view: QueryBuilder
+    source: Optional["Sheet"] = field(repr=False)
+    query_params: List[str] = field(default_factory=list)
+    name: Optional[str] = None
+    desc: Optional[str] = None
+    dbtype: Optional[DBType] = None
+    columns: List[str] = field(init=False)
+    wrapped_col_indices: List[int] = field(default_factory=list)
 
-    def __init__(
-        self,
-        view: QueryBuilder,
-        source: Optional["Sheet"],
-        query_params: Optional[List[str]] = None,  # for parameterized queries
-        desc: Optional[str] = None,
-        get_db_connection: Optional[Callable[[], DuckDBPyConnection]] = None,
-    ):
-        """
-        Need to provide a database connection when instantiating.
-        If not provided, will attempt to use the connection from the
-        source sheet and throw an error if that doesn't exist
-        """
-        self.view = view
+    def __post_init__(self):
+        self.query_params = self.query_params or []
 
-        self.query_params = query_params or []
-        self.uid = next(_unique_sequence)
-        self.source = source
-
-        # short description of operation performed on source to get this sheet
-        self.desc = desc
+        source_uid = self.source.uid if self.source else ""
+        query_params_str = ",".join(self.query_params)
+        query_str = self.view.get_sql()
+        hash_str = source_uid + query_params_str + query_str
+        self.uid = hashlib.md5(hash_str.encode("utf-8")).hexdigest()[:15]
 
         self.orderbys = {
             field.name: (order == Order.asc)
             for field, order in self.view._orderbys
         }
 
-        self.get_db_connection = self._infer_db(get_db_connection)
+        # Try to infer dbtype from source if not provided
+        if self.dbtype is None:
+            if self.source is None:
+                raise ValueError(f"Unable to infer dbtype for {self}")
+            elif self.source is not None:
+                self.dbtype = self.source.dbtype
+
+        self.get_db_connection = (
+            get_conn if self.dbtype == "disk" else get_in_memory_conn
+        )
+
         columns_types = _get_schema_for_view(
             self.get_db_connection(),
             self.view,
             query_params=self.query_params,
         )
         self.columns = [ct[0] for ct in columns_types]
+        # TODO: refactor: don't do IO in sheet constructor
+        self.persist()
 
-    @lru_cache
+    def _persist(self, key):
+        if self.dbtype == "memory":
+            sheet_store.put_in_memory(key, self)
+
+        data = asdict(self)
+
+        # exclude fields that have init=False, e.g. columns
+        # these are initialized in __post_init__
+        for field in fields(self):
+            if not field.init:
+                del data[field.name]
+
+        data.pop("source")
+        data["source_uid"] = self.source.uid if self.source else None
+        record = {"class": self.__class__.__name__, "data": data}
+        sheet_store.put(key, pickle.dumps(record))
+
+    def persist(self):
+        self._persist(key=self.uid)
+        if self.name is not None:
+            self._persist(key=self.name)
+
+    @classmethod
+    def load(cls, uid: str) -> "Sheet":
+        obj = sheet_store.get(uid)
+        if isinstance(obj, Sheet):
+            return obj
+        record = pickle.loads(sheet_store.get(uid))
+        class_ = globals()[record["class"]]
+        data = record["data"]
+        source_uid = data.pop("source_uid")
+        source = None if source_uid is None else Sheet.load(source_uid)
+        data["source"] = source
+        return class_(**data)
+
     def __len__(self):
 
         view = Query.from_(self.view).select(
@@ -258,15 +341,7 @@ class Sheet:
         first_row = rows[0]
         return first_row[0]
 
-    def _infer_db(
-        self, get_db_connection: Optional[Callable[[], DuckDBPyConnection]]
-    ) -> Callable[[], DuckDBPyConnection]:
-        if get_db_connection is not None:
-            return get_db_connection
-        if self.source is not None:
-            return self.source.get_db_connection
-        raise ValueError("No database connection provided")
-
+    # Note: this depends on implementation of __hash__
     @lru_cache
     def __getitem_cached__(self, slice_rep):
         s = slice(*slice_rep[1])
@@ -357,17 +432,17 @@ class Sheet:
             )
             .orderby("num_rows", order=Order.desc)
         )
-        return FreqSheet(res, key_cols=cols, source=self, desc="freq")
+        return FreqSheet(view=res, key_cols=cols, source=self, desc="freq")
 
     def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
         return Sheet(
-            res,
-            self.source,
+            view=res,
+            source=self.source,
             desc=self.desc,
             query_params=self.query_params,
-            get_db_connection=self.get_db_connection,
+            dbtype=self.dbtype,
         )
 
     def _filter_exact(
@@ -396,7 +471,7 @@ class Sheet:
     ) -> "Sheet":
         qry = self._filter_exact(self.view, filters, cols_to_return)
 
-        return Sheet(qry, self, desc="fil")
+        return Sheet(view=qry, source=self, desc="fil")
 
     def _filter_except(
         self,
@@ -427,7 +502,7 @@ class Sheet:
         if cols_to_return is None, then return all columns
         """
         res = self._filter_except(self.view, filters, cols_to_return)
-        return Sheet(res, self, desc="fil2")
+        return Sheet(view=res, source=self, desc="fil2")
 
     def _filter_regex(
         self,
@@ -451,7 +526,9 @@ class Sheet:
         self, column: str, regex: str, cols_to_return: Optional[List[str]]
     ) -> "Sheet":
         qry = self._filter_regex(self.view, column, regex, cols_to_return)
-        return Sheet(qry, self, query_params=[regex], desc="search")
+        return Sheet(
+            view=qry, source=self, query_params=[regex], desc="search"
+        )
 
     def pivot(self, key_cols: List[str], pivot_col: str, agg_col: str):
         """
@@ -485,7 +562,7 @@ class Sheet:
         res = (
             Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
         )
-        return Sheet(res, self, desc="piv")
+        return Sheet(view=res, source=self, desc="piv")
 
     @property
     def typ(self):
@@ -556,17 +633,17 @@ class Sheet:
         )
 
 
+@dataclass(kw_only=True, eq=False)
 class FreqSheet(Sheet):
-    def __init__(
-        self,
-        view: QueryBuilder,
-        key_cols: List[str],
-        source: "Sheet",
-        **kwargs,
-    ):
-        super().__init__(view, source, **kwargs)
-        self.source: Sheet = source
-        self.key_cols = key_cols
+    key_cols: List[str]
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.wrapped_col_indices = (
+            [self.columns.index("percentage")]
+            if "percentage" in self.columns
+            else []
+        )
 
     def check_for_key_cols(self, cols: List[str]):
         """
@@ -586,6 +663,8 @@ class FreqSheet(Sheet):
         A facet search is just the behaviour that happens
         when you press 'Enter' on a row (facet) of a frequency sheet
         """
+        if self.source is None:
+            raise ValueError("source cannot be None for freq sheet")
         return self.source.filter_exact(filters, cols_to_return=None)
 
     def filter_exact(
@@ -602,7 +681,7 @@ class FreqSheet(Sheet):
             self.check_for_key_cols(cols_to_return)
         res = self._filter_exact(self.view, filters, cols_to_return)
         return FreqSheet(
-            res, key_cols=self.key_cols, source=self.source, desc="ffil"
+            view=res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
     def filter_except(
@@ -618,7 +697,7 @@ class FreqSheet(Sheet):
             self.check_for_key_cols(cols_to_return)
         res = self._filter_except(self.view, filters, cols_to_return)
         return FreqSheet(
-            res, key_cols=self.key_cols, source=self.source, desc="ffil"
+            view=res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
     def filter_regex(
@@ -626,7 +705,7 @@ class FreqSheet(Sheet):
     ) -> "FreqSheet":
         res = self._filter_regex(self.view, column, regex, *args, **kwargs)
         return FreqSheet(
-            res,
+            view=res,
             key_cols=self.key_cols,
             source=self.source,
             query_params=[regex],
@@ -637,20 +716,15 @@ class FreqSheet(Sheet):
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
         return FreqSheet(
-            res, self.key_cols, self.source, query_params=self.query_params
+            view=res,
+            key_cols=self.key_cols,
+            source=self.source,
+            query_params=self.query_params,
         )
 
     @property
     def key_col_indices(self) -> List[int]:
         return [self.columns.index(key_col) for key_col in self.key_cols]
-
-    @property
-    def wrapped_col_indices(self) -> List[int]:
-        return (
-            [self.columns.index("percentage")]
-            if "percentage" in self.columns
-            else []
-        )
 
     def run_op(
         self,
@@ -662,69 +736,77 @@ class FreqSheet(Sheet):
         return super().run_op(operation)
 
 
-class StaticSheet(Sheet):
-    name: str
-    columns: List[str]
-    rows: List
+def _rows_to_sql_str(rows: List):
+    if len(rows) == 0:
+        return ""
+    if len(rows[0]) > 1:
+        return ",".join(map(str, rows))
+    return ",".join(map(lambda row: f"('{row[0]}')", rows))
 
-    def __init__(self):
 
-        super().__init__(
-            view=Query.from_(self.name).select("*"),
+@dataclass(kw_only=True, eq=False)
+class MemorySheet(Sheet):
+    columns: List[str] = field(hash=False)
+    rows: List = field(hash=False)
+
+    @classmethod
+    def from_records(cls, name: str, columns: List[str], rows: List, **kwargs):
+        conn = get_in_memory_conn()
+        col_str = ", ".join([f"{col} VARCHAR" for col in columns])
+        # insert rows into db
+        conn.execute(f"CREATE TABLE {name} ({col_str});")
+        conn.execute(f"INSERT INTO {name} VALUES {_rows_to_sql_str(rows)}")
+
+        return cls(
+            name=name,
+            columns=columns,
+            rows=rows,
+            view=Query.from_(name).select("*"),
             source=None,
-            desc=self.name,
-            get_db_connection=self._create_in_memory_db,
+            desc=name,
+            dbtype="memory",
+            **kwargs,
         )
 
-    def rows_to_str(self):
-        if len(self.rows) == 0:
-            return ""
-        if len(self.rows[0]) > 1:
-            return ",".join(map(str, self.rows))
-        return ",".join(map(lambda row: f"('{row[0]}')", self.rows))
 
-    def _create_in_memory_db(self):
-        conn = duckdb.connect(":memory:")
-        conn.execute("PRAGMA default_null_order='NULLS LAST'")
-
-        col_str = ", ".join([f"{col} VARCHAR" for col in self.columns])
-        # insert rows into db
-        conn.execute(f"CREATE TABLE {self.name} ({col_str});")
-        conn.execute(f"INSERT INTO {self.name} VALUES {self.rows_to_str()}")
-        return conn
-
-
-class AboutSheet(StaticSheet):
-    name = "about"
-    columns = ["description"]
-    wrapped_col_indices = [0]
-    rows = [
-        ("ShareTable is a keyboard-driven tool for exploring tabular data.",),
-        (
-            "Its a quick and cheap way of sharing small-medium sized data.\nIt removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
-        ),
-    ]
-
-
-class MasterSheet(StaticSheet):
-    name = "master"
-    columns = ["name", "details", "date"]
-    wrapped_col_indices = [1]
-    all_sheets = load_demo_datasets()
-    rows = [
-        (sheet["display_name"], sheet["details"], sheet["date"])
-        for sheet in all_sheets
-    ]
+@dataclass(kw_only=True, eq=False)
+class SheetOfSheets(MemorySheet):
+    table_names: List[str]
 
     def run_op(self, operation: OperationsType) -> "Sheet":
 
         if isinstance(operation, OpenOperation):
-            table_name = self.all_sheets[operation.rowid]["table_name"]
+            table_name = self.table_names[operation.rowid]
             return Sheet(
-                Query.from_(table_name).select("*"),
+                view=Query.from_(table_name).select("*"),
                 source=self,
                 desc="gta",
-                get_db_connection=get_conn,
+                dbtype="disk",
             )
 
         return super().run_op(operation)
+
+
+demo_datasets = load_demo_datasets()
+main_sheet = SheetOfSheets.from_records(
+    name="main",
+    columns=["name", "details", "date"],
+    rows=[
+        (dataset["display_name"], dataset["details"], dataset["date"])
+        for dataset in demo_datasets
+    ],
+    table_names=[dataset["table_name"] for dataset in demo_datasets],
+    wrapped_col_indices=[1],
+)
+
+about_sheet = MemorySheet.from_records(
+    name="about",
+    columns=["description"],
+    rows=[
+        ("Tablehub is a keyboard-driven tool for exploring tabular data.",),
+        (
+            "Its a quick and cheap way of sharing small-medium sized data.\nIt removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
+        ),
+    ],
+    wrapped_col_indices=[0],
+)

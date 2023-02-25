@@ -1,11 +1,10 @@
-from typing import Dict
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 from fastapi.responses import HTMLResponse
 from utils import fetch_sample_database
-from sheet import Sheet, AboutSheet, MasterSheet, OperationsType
+from sheet import Sheet, OperationsType
 from pydantic import NonNegativeInt
 from fastapi.exceptions import HTTPException
 from view import html_page
@@ -17,22 +16,10 @@ app = FastAPI()
 fetch_sample_database()
 
 
-# core data structure (mapping from sheet uid to Sheet)
-sheets: Dict[str, Sheet] = dict()
-
-master_sheet = MasterSheet()
-sheets["master"] = master_sheet
-sheets[master_sheet.uid] = master_sheet
-
-about_sheet = AboutSheet()
-sheets["about"] = about_sheet
-sheets[about_sheet.uid] = about_sheet
-
-
 @app.get("/")
 def index():
     # redirect to initial view
-    return RedirectResponse(url=f"/sheets/{master_sheet.uid}")
+    return RedirectResponse(url=f"/sheets/main")
 
 
 # passing uid in the body might be semantically more sensible
@@ -41,11 +28,9 @@ def post_view(
     uid: str,
     operation: OperationsType,
 ):
-    prev_sheet = sheets[uid]
+    prev_sheet = Sheet.load(uid)
 
     new_sheet = prev_sheet.run_op(operation)
-
-    sheets[new_sheet.uid] = new_sheet
 
     return {"new_sheet": new_sheet.uid, "yolo": "Success"}
 
@@ -53,10 +38,11 @@ def post_view(
 @app.get("/sheets/{uid}")
 def sheet_by_uid(uid: str, page: NonNegativeInt = 0):
 
-    if uid not in sheets:
+    try:
+        sheet = Sheet.load(uid)
+    except KeyError:
         raise HTTPException(status_code=404, detail="Sheet not found")
 
-    sheet = sheets[uid]
     return HTMLResponse(content=html_page(sheet, page=page), status_code=200)
 
 
@@ -70,10 +56,11 @@ def download_sheet(uid: str, file_type: str = "csv"):
     if file_type != "csv":
         raise HTTPException(status_code=404, detail="File type not supported")
 
-    if uid not in sheets:
+    try:
+        sheet = Sheet.load(uid)
+    except KeyError:
         raise HTTPException(status_code=404, detail="Sheet not found")
 
-    sheet = sheets[uid]
     filename_without_ext = "_".join([str(s) for s in sheet.lineage])
     filename = (filename_without_ext or "download") or ".csv"
 

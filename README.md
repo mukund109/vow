@@ -1,10 +1,17 @@
 where was i
+* was converting all Sheet and subclasses to dataclasses so that its easier to serialize them in a consistent manner
+  * sheet.load() doesn't work for static sheets
+  * think about how to hash (hexadecimal hash)
 * search is broken
   * enter gets pressed twice accidentally
 * only have enter button show up on certain sheets
 * add more buttons (facet button, filter '"' button, regex search 2 buttons - enter and escape)
 * remove columns from "Small business loan table for perf reasons"
 * chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
+
+add warning for vimium users
+
+Lighthouse audit revealed several optimizations
 
 design of column dropdown
 * Select column
@@ -128,3 +135,28 @@ duckdb-wasm (READ thoroughly)
 https://duckdb.org/2021/10/29/duckdb-wasm.html
 
 use this for fully-client side vow?
+
+## persisting changes
+This is a complex issue
+  * Some sheet attributes are used for re-creating the table e.g.  view, query_params, dbtype
+  * Other sheet attributes inform the look of the sheet e.g. wrapped_col_indices, desc
+* the `source` attribute is used to re-create the lineage
+  * there's still no explicit way to find which operation was used to transform older sheet into current one. This info is implicitly stored in desc
+
+There are also in-memory sheets created at the start of the application. Should they be persisted? No
+Its ok if the master and about sheet cannot be re-created from storage
+Only need to make sure that the uid for these sheets is mapped to their in-memory objects for lookup
+
+For now, doing the following:
+Persist all sheet attributes, including visual ones
+Don't persist in-memory sheets (i.e. sheets where dbtype = 'memory')
+
+It may lead to breaking changes in the future
+* when attribute name changes e.g. `desc` -> `description`
+* or when attribute value changes e.g. `gta[fil]` -> `filter`
+may need to migrate older database to new one, or start from scratch
+
+may have to change the way I'm persisting these
+Instead of storing UID -> query, source
+I should store UID -> operation, source
+That way I'll only have to worry about keeping operations backward compatible, and making sure that the source sheet implements that operation
