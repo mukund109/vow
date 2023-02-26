@@ -138,7 +138,7 @@ def html_rows(s: Table, rows: List[Tuple[str]]):
                     "td",
                     ("x-ref", f"cell-{i}-{j}"),
                     ("x-bind", f"cell({i}, {j})"),
-                    ("data-val", row[j] if not is_none else ""),
+                    ("data-val", str(row[j]) if not is_none else ""),
                     klass=klass,
                 ):
                     doc.add_class("null" if is_none else "")
