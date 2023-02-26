@@ -14,6 +14,7 @@ from typing import (
     Union,
     Tuple,
     Literal,
+    Self,
 )
 from duckdb import DuckDBPyConnection
 import duckdb
@@ -610,7 +611,7 @@ class Sheet:
 
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported operation for sheet type {self.__class__.__name__}",
+            detail=f"Unsupported operation",
         )
 
     def iter_csv(self):
@@ -741,7 +742,10 @@ class MemorySheet(Sheet):
         col_str = ", ".join([f"{col} VARCHAR" for col in columns])
         # insert rows into db
         conn.execute(f"CREATE TABLE {name} ({col_str});")
-        conn.execute(f"INSERT INTO {name} VALUES {_rows_to_sql_str(rows)}")
+        num_cols = len(columns)
+        conn.executemany(
+            f"INSERT INTO {name} VALUES ({','.join(['?'] * num_cols)});", rows
+        )
 
         return cls(
             name=name,
@@ -773,6 +777,14 @@ class SheetOfSheets(MemorySheet):
         return super().run_op(operation)
 
 
+class MarkdownSheet(MemorySheet):
+    @classmethod
+    def from_markdown_str(cls, name: str, text: str) -> Self:
+        return cls.from_records(
+            name=name, columns=["markdown"], rows=[(text,)]
+        )
+
+
 demo_datasets = load_demo_datasets()
 main_sheet = SheetOfSheets.from_records(
     name="main",
@@ -785,14 +797,17 @@ main_sheet = SheetOfSheets.from_records(
     wrapped_col_indices=[1],
 )
 
-about_sheet = MemorySheet.from_records(
+about_sheet = MarkdownSheet.from_markdown_str(
     name="about",
-    columns=["description"],
-    rows=[
-        ("Tablehub is a keyboard-driven tool for exploring tabular data.",),
-        (
-            "Its a quick and cheap way of sharing small-medium sized data.\nIt removes the pain of opening a jupyter notebook or a BI tool just to get basic summary statistics.",
-        ),
-    ],
-    wrapped_col_indices=[0],
+    text="""Tablehub is a tool for sharing and exploring tables""",
+)
+
+vimium_warning_sheet = MarkdownSheet.from_markdown_str(
+    name="vimium",
+    text="""#### Note for Vimium Users
+
+You will need to disable **Vimium** for [Tablehub.io](/sheets/about) if you want to make use of the keybindings implemented on this site.
+
+Navigation experience for you will be slower since vimium disabled browsers' backward-forward cache. To get around this you'll have to delete/disable the Vimium plugin entirely.
+    """,
 )

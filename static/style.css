@@ -61,6 +61,13 @@ td.clipped-cell {
   white-space: nowrap;
 }
 
+/* markdown-cell should come after clipped-cell and wrapped-cell */
+td.markdown-cell {
+  table-layout: fixed;
+  max-width: 650px;
+  white-space: normal;
+}
+
 th.hidden-col {
   color: #bcbcbc00;
   background: #dededc;
@@ -77,6 +84,7 @@ td.hidden-cell {
   min-width: 0px;
   white-space: unset;
 }
+
 
 .basic-table .active td {
   background: #c2c8c0;

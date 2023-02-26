@@ -1,6 +1,8 @@
 from typing import List, Tuple
 from yattag.doc import Doc
 from sheet import Sheet, FreqSheet, SheetOfSheets
+from sheet import MarkdownSheet
+from markdown2 import markdown
 
 
 def html_lineage(s: Sheet):
@@ -126,16 +128,21 @@ def html_rows(s: Sheet, rows: List[Tuple[str]]):
                 elif is_float:
                     display_val = f"{row[j]:.2f}"
 
+                klass = "markdown-cell" if isinstance(s, MarkdownSheet) else ""
                 with tag(
                     "td",
                     ("x-ref", f"cell-{i}-{j}"),
                     ("x-bind", f"cell({i}, {j})"),
+                    klass=klass,
                 ):
                     doc.add_class("null" if is_none else "")
                     doc.add_class("percentage" if is_percent else "")
                     if is_percent:
                         doc.attr(style=f"background-size: {display_val}% 100%")
-                    text(display_val)
+                    if isinstance(s, MarkdownSheet):
+                        doc.asis(markdown(display_val))
+                    else:
+                        text(display_val)
 
     return doc.getvalue()
 
@@ -178,33 +185,34 @@ def html_footer(s: Sheet, page: int = 0):
     with tag("div", "x-cloak", id="table-footer"):
         doc.line("b", str(len(s)))
         text(" rows")
-        with tag("span", style="float:right"):
-            has_prev_page = page > 0
-            has_next_page = (page + 1) * _MAX_NUM_ROWS < len(s)
-            if has_prev_page:
-                doc.line(
-                    "a",
-                    "prev",
-                    id="previous-page",
-                    href=f"/sheets/{s.uid}?page={page - 1}",
-                )
-            else:
-                text("prev")
+        has_prev_page = page > 0
+        has_next_page = (page + 1) * _MAX_NUM_ROWS < len(s)
+        if has_prev_page or has_next_page:
+            with tag("span", style="float:right"):
+                if has_prev_page:
+                    doc.line(
+                        "a",
+                        "prev",
+                        id="previous-page",
+                        href=f"/sheets/{s.uid}?page={page - 1}",
+                    )
+                else:
+                    text("prev")
 
-            doc.line("span", "[P]", klass="label")
-            text("| ")
+                doc.line("span", "[P]", klass="label")
+                text("| ")
 
-            if has_next_page:
-                doc.line(
-                    "a",
-                    "next",
-                    id="next-page",
-                    href=f"/sheets/{s.uid}?page={page + 1}",
-                )
-            else:
-                text("next")
+                if has_next_page:
+                    doc.line(
+                        "a",
+                        "next",
+                        id="next-page",
+                        href=f"/sheets/{s.uid}?page={page + 1}",
+                    )
+                else:
+                    text("next")
 
-            doc.line("span", "[N]", klass="label")
+                doc.line("span", "[N]", klass="label")
 
     return doc.getvalue()
 
