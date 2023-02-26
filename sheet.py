@@ -382,14 +382,13 @@ class Sheet:
         return self.source.all_query_params() + self.query_params
 
     def __str__(self):
-        if self.source is None and self.desc is None:
-            return f"{self.uid}"
-        if self.source is not None and self.desc is None:
-            return f"{self.source}[{self.uid}]"
-        if self.source is None and self.desc is not None:
-            return f"{self.desc}"
-        else:
-            return f"{self.source}[{self.desc}]"
+        match (self.source, self.name, self.desc):
+            case (None, None, None):
+                return "unk"
+            case (_, n, None):
+                return n
+            case (_, _, d):
+                return d
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
@@ -770,7 +769,7 @@ class SheetOfSheets(MemorySheet):
             return Sheet(
                 view=Query.from_(table_name).select("*"),
                 source=self,
-                desc="gta",
+                name=table_name,
                 dbtype="disk",
             )
 
