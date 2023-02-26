@@ -129,10 +129,16 @@ def html_rows(s: Sheet, rows: List[Tuple[str]]):
                     display_val = f"{row[j]:.2f}"
 
                 klass = "markdown-cell" if isinstance(s, MarkdownSheet) else ""
+
+                # TODO: refactor: None and empty string have the same
+                # data-val attribute.
+                # The frontend js checks for the presence of "null" class
+                # to distinguish between the two
                 with tag(
                     "td",
                     ("x-ref", f"cell-{i}-{j}"),
                     ("x-bind", f"cell({i}, {j})"),
+                    ("data-val", row[j] if not is_none else ""),
                     klass=klass,
                 ):
                     doc.add_class("null" if is_none else "")

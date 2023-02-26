@@ -454,7 +454,7 @@ document.addEventListener('alpine:init', () => {
     if (cell_el.classList.contains("null")) {
       return null
     } else {
-      return cell_el.innerText;
+      return cell_el.getAttribute('data-val');
     }
   }
 

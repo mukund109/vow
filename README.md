@@ -16,19 +16,16 @@ design of column dropdown
 
 bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
-* facet operation fails when filter value has space in it e.g. 'F '
-  * https_rank of mastodon sheet
-* facet operation fails when filter value is integer
+* facet operation fails when filter value is integer (can't reproduce)
 
 
 * explore
-  * yattag for generating html instead of using Jinja template
   * row numbers (duckdb row_numbers())
   * make histogram cover entire row in freq sheet (was having trouble getting the css right, the color of the td element was taking precedence over color of tr)
 slightly bigger challenges
   * versioning javascript files
   * if html is cached for a long time, how will html/js updates happen on client side?
-  * wrapped_col_indices implementation seems brittle, need a straightforward way of specifying state on server, same with key_cols implementation
+  * wrapped_col_indices implementation seems brittle, need a straightforward way of initializing browser state from the server, same with key_cols implementation
     * col should be wrapped even if js is not loaded
   * use $persist and $scroll provided by alpinejs
   * way to embed table in html
@@ -48,7 +45,6 @@ pre-release checklist
 * [F] chrome loading issue? (going back after regex operation keeps the search bar open but out of focus)
 * [F] mouse should hide itself
 * [F] indicator of multi-line col
-* [F] don't scroll cell into view if mouse hovers over it
 * [F] load table into pandas
 * refactor - write tests
 * refactor performOp functions (some take arguments when they should be using self.<attribute>)
