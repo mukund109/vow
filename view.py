@@ -219,9 +219,9 @@ def html_footer(s: Sheet, page: int = 0):
 
 def html_right_cheatsheet():
     doc, tag, text = Doc().tagtext()
-    with tag("p"):
-        doc.line("span", "?", klass="label")
-        text(" for help")
+    # with tag("p"):
+    #     doc.line("span", "?", klass="label")
+    #     text(" for help")
     return doc.getvalue()
 
 
