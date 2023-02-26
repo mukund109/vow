@@ -29,6 +29,8 @@ def html_navbar(s: Table) -> str:
             with tag("span", klass="navbar-links"):
                 doc.line("a", "Download (CSV)", href=f"/downloads/{s.uid}/")
             with tag("span", klass="navbar-links"):
+                doc.line("a", "Explore", href=f"/")
+            with tag("span", klass="navbar-links"):
                 doc.line("a", "About", href="/about/")
     return doc.getvalue()
 
