@@ -798,15 +798,12 @@ main_sheet = SheetOfSheets.from_records(
 
 about_sheet = MarkdownSheet.from_markdown_str(
     name="about",
-    text="""Tablehub is a tool for sharing and exploring tables""",
-)
+    text="""Tablehub is a tool for sharing and exploring tables
 
-vimium_warning_sheet = MarkdownSheet.from_markdown_str(
-    name="vimium",
-    text="""#### Note for Vimium Users
+#### Note for Vimium users
 
-You will need to disable **Vimium** for [Tablehub.io](/sheets/about) if you want to make use of the keybindings implemented on this site.
+You will need to disable **Vimium** for [Tablehub.io](/sheets/about) if you want to make use of the keybindings implemented here.
 
-Navigation experience for you will be slower since vimium disabled browsers' backward-forward cache. To get around this you'll have to delete/disable the Vimium plugin entirely.
+Navigation experience for you will be slower since vimium disables browsers' backward-forward cache. The only way to get around this is to delete/disable the Vimium plugin entirely.
     """,
 )
