@@ -663,7 +663,7 @@ class FreqTable(Table):
         col_names = [c.name for c in self.columns]
         self.wrapped_col_indices = (
             [col_names.index("percentage")]
-            if "percentage" in self.columns
+            if "percentage" in col_names
             else []
         )
 
