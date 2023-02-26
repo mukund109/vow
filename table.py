@@ -723,14 +723,6 @@ class FreqTable(Table):
         return super().run_op(operation)
 
 
-def _rows_to_sql_str(rows: List):
-    if len(rows) == 0:
-        return ""
-    if len(rows[0]) > 1:
-        return ",".join(map(str, rows))
-    return ",".join(map(lambda row: f"('{row[0]}')", rows))
-
-
 @dataclass(kw_only=True, eq=False)
 class MemoryTable(Table):
     columns: List[str] = field(hash=False)
