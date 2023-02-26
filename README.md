@@ -1,7 +1,5 @@
 where was i
 * add more buttons (regex search 2 buttons - enter and escape)
-* remove columns from "Small business loan table for perf reasons"
-* chrome scrolling by pressing j/k on hold not working on tablehub.io on large tables
 
 add warning for vimium users
 
@@ -14,8 +12,6 @@ design of column dropdown
 
 bug
 * apostrophe in "display_name" of demo datasets throws off sql syntax
-* facet operation fails when filter value is integer (can't reproduce)
-
 
 * explore
   * row numbers (duckdb row_numbers())
