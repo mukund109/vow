@@ -263,10 +263,13 @@ document.addEventListener('alpine:init', () => {
     toggle_hidden_col() {
       if (this.hidden_cols.has(this.colidx)) {
         this.hidden_cols.delete(this.colidx)
+        this.removeClassFromColCells(this.colidx, 'hidden-cell')
       } else {
         this.hidden_cols.add(this.colidx)
+        this.addClassToActiveCol('hidden-cell')
       }
       this.update_colid_to_next_visible()
+
     },
 
     get_visible_col_names() {
@@ -313,6 +316,10 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    scrollCurrentCellIntoView() {
+      this.scrollCellIntoView(this.rowidx, this.colidx)
+    },
+
     toggle_multiline_col() {
       if (this.col_wrapping[this.colidx] == 'clip') {
         this.col_wrapping[this.colidx] = 'wrap'
@@ -321,6 +328,33 @@ document.addEventListener('alpine:init', () => {
       } else {
         this.col_wrapping[this.colidx] = 'clip'
       }
+    },
+
+    removeClassFromColCells(colidx, className) {
+      for (let i = 0; i < num_rows; i++) {
+        this.$refs[`cell-${i}-${colidx}`].classList.remove(className)
+      }
+    },
+
+    addClassToActiveCol(className) {
+      for (let i = 0; i < num_rows; i++) {
+        this.$refs[`cell-${i}-${this.colidx}`].classList.add(className)
+      }
+    },
+
+    removeClassFromRow(rowidx, className) {
+      this.$refs[`row-${rowidx}`].classList.remove(className)
+    },
+
+    addClassToActiveRow(className) {
+      for (let j = 0; j < num_cols; j++) {
+        this.$refs[`row-${this.rowidx}`].classList.add(className)
+      }
+    },
+
+    updateActiveRowOffset() {
+      const activeRow = this.$refs[`row-${this.rowidx}`]
+      this.$store.main.activeRowOffset = window.pageXOffset + activeRow.getBoundingClientRect().top
     },
 
     is_search_match(rowidx) {
@@ -434,6 +468,34 @@ document.addEventListener('alpine:init', () => {
     // after a delay of 250ms
     "@keydown.window.debounce"() {
       this.saveStateToStorage()
+    },
+
+    // instead of doing Alpine.bind on all cells
+    // all reactive cell updates are done using $watch
+    // much more efficient this way
+    'x-init'() {
+      this.addClassToActiveCol('selected-col')
+      this.addClassToActiveRow('active')
+
+      this.$watch('colidx', (_, old_j) => {
+        this.removeClassFromColCells(old_j, 'selected-col')
+        this.addClassToActiveCol('selected-col')
+        this.scrollCurrentCellIntoView();
+      })
+
+      this.$watch('rowidx', (_, old_i) => {
+        this.removeClassFromRow(old_i, 'active')
+        this.addClassToActiveRow('active')
+        this.scrollCurrentCellIntoView();
+        this.updateActiveRowOffset()
+      })
+
+      this.$watch('col_wrapping', () => {
+        this.scrollCurrentCellIntoView();
+        this.updateActiveRowOffset()
+      })
+
+      this.$nextTick(() => this.scrollCurrentCellIntoView());
     }
   });
 
@@ -471,7 +533,6 @@ document.addEventListener('alpine:init', () => {
   Alpine.bind('row', (idx) => ({
     ':class'() {
       return {
-        'active': this.rowidx == idx,
         'filtered': (!this.search_mode & this.is_filtered(idx)) | (this.search_mode & !this.is_search_match(idx)),
       }
     },
@@ -507,22 +568,9 @@ document.addEventListener('alpine:init', () => {
         // this is commented out due to performance reasons
         // will try to find another approach later
         // 'selected-cell': (this.rowidx == i) && (this.colidx == j),
-        'selected-col': (this.colidx == j),
-        'hidden-cell': this.hidden_cols.has(j),
         'clipped-cell': this.col_wrapping[j] == 'clip',
         'wrapped-cell': this.col_wrapping[j] == 'wrap',
       }
-    },
-
-    'x-effect'() {
-      // watching `col_wrapping` for changes
-      // scrolls if it changes
-      this.col_wrapping[j] == 'clip';
-      this.col_wrapping[j] == 'wrap';
-
-      this.scrollCellIntoView(i, j);
-      const activeRow = this.$refs[`row-${this.rowidx}`]
-      this.$store.main.activeRowOffset = window.pageXOffset + activeRow.getBoundingClientRect().top
     },
 
     '@click'() {
