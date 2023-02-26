@@ -1,11 +1,11 @@
-from typing import List, Tuple
+from typing import Any, List, Tuple
 from yattag.doc import Doc
 from table import Table, FreqTable, TableOfTables
 from table import MarkdownTable
 from markdown2 import markdown
 
 
-def html_lineage(s: Table):
+def html_lineage(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("ul", id="parent-tables", klass="column col-9 breadcrumb"):
         if len(s.lineage) > 1:
@@ -16,7 +16,7 @@ def html_lineage(s: Table):
     return doc.getvalue()
 
 
-def html_navbar(s: Table):
+def html_navbar(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("div", style="padding: 0.6rem", klass="column col-2 col-ml-auto"):
         with tag("span", klass="navbar-links"):
@@ -26,7 +26,7 @@ def html_navbar(s: Table):
     return doc.getvalue()
 
 
-def html_hints(s: Table):
+def html_hints(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
     with tag(
         "div", ("x-bind", "hints_sidebar"), id="hints", style="display: none;"
@@ -61,24 +61,25 @@ def html_hints(s: Table):
     return doc.getvalue()
 
 
-def html_header_row(s: Table):
+def html_header_row(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("tr", ("x-ref", "header")):
-        for idx, col in enumerate(s.columns):
-            is_sorted = col in s.orderbys
+        for idx, column in enumerate(s.columns):
+            column_name = column.name
+            is_sorted = column_name in s.orderbys
             with tag("th"):
                 doc.add_class("sorted-col" if is_sorted else "")
                 doc.attr(("x-ref", f"col-{idx}"))
                 doc.attr(("x-bind", f"col({idx})"))
-                doc.attr(("data-colname", col))
-                doc.text(col)
+                doc.attr(("data-colname", column_name))
+                doc.text(column_name)
                 if is_sorted:
-                    sort_sign = "↑" if s.orderbys[col] else "↓"
+                    sort_sign = "↑" if s.orderbys[column_name] else "↓"
                     doc.line("span", sort_sign, klass="arrow")
     return doc.getvalue()
 
 
-def html_search_row(s: Table):
+def html_search_row(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("tr", ("x-bind", "search_row()"), style="display: none;"):
         for idx, _ in enumerate(s.columns):
@@ -109,7 +110,48 @@ def html_search_row(s: Table):
     return doc.getvalue()
 
 
-def html_rows(s: Table, rows: List[Tuple[str]]):
+def html_cell(
+    s: Table, val: Any, i: int, j: int, is_percent: bool = False
+) -> str:
+    doc, tag, text = Doc().tagtext()
+    is_none = val is None
+    is_float = isinstance(val, float)
+    display_val = str(val)
+    if is_none:
+        display_val = "NaN"
+    elif is_float:
+        display_val = f"{val:.2f}"
+
+    klass = "markdown-cell" if isinstance(s, MarkdownTable) else ""
+
+    # TODO: refactor: None and empty string have the same
+    # data-val attribute.
+    # The frontend js checks for the presence of "null" class
+    # to distinguish between the two
+    with tag(
+        "td",
+        ("x-ref", f"cell-{i}-{j}"),
+        ("x-bind", f"cell({i}, {j})"),
+        ("data-val", str(val) if not is_none else ""),
+        klass=klass,
+    ):
+        doc.add_class("null" if is_none else "")
+        doc.add_class("percentage" if is_percent else "")
+        if is_percent:
+            doc.attr(style=f"background-size: {display_val}% 100%")
+        if isinstance(s, MarkdownTable):
+            doc.asis(markdown(display_val))
+        elif type(val) == float:
+            doc.line("em", display_val)
+        elif type(val) == int:
+            doc.line("span", display_val, klass="int")
+        else:
+            text(display_val)
+
+    return doc.getvalue()
+
+
+def html_rows(s: Table, rows: List[Tuple[str]]) -> str:
     doc, tag, text = Doc().tagtext()
     for i, row in enumerate(rows):
         with tag(
@@ -118,37 +160,9 @@ def html_rows(s: Table, rows: List[Tuple[str]]):
             ("x-ref", f"row-{i}"),
             style="cursor: pointer",
         ):
-            for j, col in enumerate(s.columns):
-                is_none = row[j] is None
-                is_percent = col == "percentage"
-                is_float = isinstance(row[j], float)
-                display_val = str(row[j])
-                if is_none:
-                    display_val = "NaN"
-                elif is_float:
-                    display_val = f"{row[j]:.2f}"
-
-                klass = "markdown-cell" if isinstance(s, MarkdownTable) else ""
-
-                # TODO: refactor: None and empty string have the same
-                # data-val attribute.
-                # The frontend js checks for the presence of "null" class
-                # to distinguish between the two
-                with tag(
-                    "td",
-                    ("x-ref", f"cell-{i}-{j}"),
-                    ("x-bind", f"cell({i}, {j})"),
-                    ("data-val", str(row[j]) if not is_none else ""),
-                    klass=klass,
-                ):
-                    doc.add_class("null" if is_none else "")
-                    doc.add_class("percentage" if is_percent else "")
-                    if is_percent:
-                        doc.attr(style=f"background-size: {display_val}% 100%")
-                    if isinstance(s, MarkdownTable):
-                        doc.asis(markdown(display_val))
-                    else:
-                        text(display_val)
+            for j, column in enumerate(s.columns):
+                is_percent = column.name == "percentage"
+                doc.asis(html_cell(s, row[j], i, j, is_percent=is_percent))
 
     return doc.getvalue()
 
@@ -156,7 +170,7 @@ def html_rows(s: Table, rows: List[Tuple[str]]):
 _MAX_NUM_ROWS = 25
 
 
-def html_table(s: Table, page: int):
+def html_table(s: Table, page: int) -> str:
 
     rows, _ = s[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
     doc, tag, text = Doc().tagtext()
@@ -186,7 +200,7 @@ def html_table(s: Table, page: int):
     return doc.getvalue()
 
 
-def html_footer(s: Table, page: int = 0):
+def html_footer(s: Table, page: int = 0) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("div", "x-cloak", id="table-footer"):
         doc.line("b", str(len(s)))
@@ -223,7 +237,7 @@ def html_footer(s: Table, page: int = 0):
     return doc.getvalue()
 
 
-def html_right_cheatsheet():
+def html_right_cheatsheet() -> str:
     doc, tag, text = Doc().tagtext()
     # with tag("p"):
     #     doc.line("span", "?", klass="label")
@@ -231,7 +245,7 @@ def html_right_cheatsheet():
     return doc.getvalue()
 
 
-def html_table_parent(s: Table, page):
+def html_table_parent(s: Table, page) -> str:
     doc, tag, text = Doc().tagtext()
     with tag(
         "div",
@@ -265,7 +279,7 @@ def html_table_parent(s: Table, page):
     return doc.getvalue()
 
 
-def html_page(s: Table, page: int):
+def html_page(s: Table, page: int) -> str:
     doc = Doc()
     doc.asis("<!DOCTYPE html>")
     with doc.tag("html", lang="en"):

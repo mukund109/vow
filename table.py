@@ -19,7 +19,8 @@ from typing import (
 from duckdb import DuckDBPyConnection
 import duckdb
 from fastapi import HTTPException
-from pypika.queries import Column, QueryBuilder
+from pypika.queries import QueryBuilder
+from pypika.queries import Column as QueryColumn
 from pypika.functions import Cast, Count, Max
 from pypika.enums import Order
 from pypika import (
@@ -32,6 +33,7 @@ from pypika import (
     analytics,
 )
 from pydantic import BaseModel
+from enum import StrEnum
 
 
 def load_demo_datasets():
@@ -41,6 +43,26 @@ def load_demo_datasets():
 
 DBType = Literal["memory", "disk"]
 
+class ColType(StrEnum):
+    BIGINT = "BIGINT"
+    BOOLEAN = "BOOLEAN"
+    BLOB = "BLOB"
+    DATE = "DATE"
+    DOUBLE = "DOUBLE"
+    DECIMAL = "DECIMAL"
+    HUGEINT = "HUGEINT"
+    INTEGER = "INTEGER"
+    REAL = "REAL"
+    SMALLINT = "SMALLINT"
+    TIME = "TIME"
+    TIMESTAMP = "TIMESTAMP"
+    TINYINT = "TINYINT"
+    UBIGINT = "UBIGINT"
+    UINTEGER = "UINTEGER"
+    USMALLINT = "USMALLINT"
+    UTINYINT = "UTINYINT"
+    UUID = "UUID"
+    VARCHAR = "VARCHAR"
 
 def get_conn() -> DuckDBPyConnection:
     conn = duckdb.connect("vow.db", read_only=True)
@@ -142,25 +164,39 @@ OperationsType = Union[
 
 regexp_matches = CustomFunction("regexp_matches", ["string", "regex"])
 
+@dataclass(frozen=True)
+class Column:
+    name: str
+    type: ColType
+
 
 def _get_schema_for_view(
     conn: DuckDBPyConnection,
     view: QueryBuilder,
     query_params: Optional[List[str]] = None,
-) -> List[Tuple[str, str]]:
+) -> List[Column]:
+
+    sql_query = f"DESCRIBE {view.get_sql()}"
 
     if query_params is None:
         query_params = []
 
     try:
-        conn.execute(view.get_sql(), query_params)
+        conn.execute(sql_query, query_params)
     except Exception as e:
-        print(view, query_params)
+        print(sql_query)
         raise e
 
-    columns = [(col[0], col[1]) for col in conn.description]
+    try:
+        rows = conn.fetchall()
+    except RuntimeError as e:
+        if e.args[0] == "no open result set":
+            return []
+        else:
+            raise e
 
-    return columns
+    schema: List[Column] = [Column(row[0], row[1]) for row in rows]
+    return schema
 
 
 def _execute_query(
@@ -233,7 +269,6 @@ def _execute_query_csv_stream(
                 break
             raise e
 
-
 @dataclass(kw_only=True, eq=False)
 class Table:
     uid: str = field(init=False)
@@ -243,7 +278,7 @@ class Table:
     name: Optional[str] = None
     desc: Optional[str] = None
     dbtype: Optional[DBType] = None
-    columns: List[str] = field(init=False)
+    columns: List[Column] = field(init=False)
     wrapped_col_indices: List[int] = field(default_factory=list)
 
     def __post_init__(self):
@@ -271,12 +306,11 @@ class Table:
             get_conn if self.dbtype == "disk" else get_in_memory_conn
         )
 
-        columns_types = _get_schema_for_view(
+        self.columns = _get_schema_for_view(
             self.get_db_connection(),
             self.view,
             query_params=self.query_params,
         )
-        self.columns = [ct[0] for ct in columns_types]
         # TODO: refactor: don't do IO in table constructor
         self.persist()
 
@@ -406,7 +440,7 @@ class Table:
         # By doing I can use "num_rows" as the field to sort on, and can access
         # it from self.orderbys
         # TODO: make a test case for this
-        num_rows = Column("num_rows")
+        num_rows = QueryColumn("num_rows")
         percentage = (
             100 * Cast(num_rows, "REAL") / analytics.Sum(num_rows).over()
         )
@@ -626,8 +660,9 @@ class FreqTable(Table):
 
     def __post_init__(self):
         super().__post_init__()
+        col_names = [c.name for c in self.columns]
         self.wrapped_col_indices = (
-            [self.columns.index("percentage")]
+            [col_names.index("percentage")]
             if "percentage" in self.columns
             else []
         )
@@ -711,7 +746,8 @@ class FreqTable(Table):
 
     @property
     def key_col_indices(self) -> List[int]:
-        return [self.columns.index(key_col) for key_col in self.key_cols]
+        col_names = [c.name for c in self.columns]
+        return [col_names.index(key_col) for key_col in self.key_cols]
 
     def run_op(
         self,
@@ -725,23 +761,23 @@ class FreqTable(Table):
 
 @dataclass(kw_only=True, eq=False)
 class MemoryTable(Table):
-    columns: List[str] = field(hash=False)
+    cols: List[str] = field(hash=False)
     rows: List = field(hash=False)
 
     @classmethod
-    def from_records(cls, name: str, columns: List[str], rows: List, **kwargs):
+    def from_records(cls, name: str, cols: List[str], rows: List, **kwargs):
         conn = get_in_memory_conn()
-        col_str = ", ".join([f"{col} VARCHAR" for col in columns])
+        col_str = ", ".join([f"{col} VARCHAR" for col in cols])
         # insert rows into db
         conn.execute(f"CREATE TABLE {name} ({col_str});")
-        num_cols = len(columns)
+        num_cols = len(cols)
         conn.executemany(
             f"INSERT INTO {name} VALUES ({','.join(['?'] * num_cols)});", rows
         )
 
         return cls(
             name=name,
-            columns=columns,
+            cols=cols,
             rows=rows,
             view=Query.from_(name).select("*"),
             source=None,
@@ -773,14 +809,14 @@ class MarkdownTable(MemoryTable):
     @classmethod
     def from_markdown_str(cls, name: str, text: str) -> Self:
         return cls.from_records(
-            name=name, columns=["md"], rows=[(text,)]
+            name=name, cols=["md"], rows=[(text,)]
         )
 
 
 demo_datasets = load_demo_datasets()
 main_table = TableOfTables.from_records(
     name="main",
-    columns=["name", "details", "date"],
+    cols=["name", "details", "date"],
     rows=[
         (dataset["display_name"], dataset["details"], dataset["date"])
         for dataset in demo_datasets
