@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 from fastapi.responses import HTMLResponse
 from utils import fetch_sample_database
-from sheet import Sheet, OperationsType
+from table import Table, OperationsType
 from pydantic import NonNegativeInt
 from fastapi.exceptions import HTTPException
 from view import html_page
@@ -20,53 +20,53 @@ fetch_sample_database()
 @app.get("/")
 def index():
     # redirect to initial view
-    return RedirectResponse(url=f"/sheets/main")
+    return RedirectResponse(url=f"/tables/main")
 
 
 # passing uid in the body might be semantically more sensible
-@app.post("/sheets/{uid}")
+@app.post("/tables/{uid}")
 def post_view(
     uid: str,
     operation: OperationsType,
 ):
-    prev_sheet = Sheet.load(uid)
+    prev_table = Table.load(uid)
 
-    new_sheet = prev_sheet.run_op(operation)
+    new_table = prev_table.run_op(operation)
 
-    return {"new_sheet": new_sheet.uid, "yolo": "Success"}
+    return {"new_table": new_table.uid, "yolo": "Success"}
 
 
-@app.get("/sheets/{uid}")
-def sheet_by_uid(uid: str, page: NonNegativeInt = 0):
+@app.get("/tables/{uid}")
+def table_by_uid(uid: str, page: NonNegativeInt = 0):
 
     try:
-        sheet = Sheet.load(uid)
+        table = Table.load(uid)
     except KeyError:
-        raise HTTPException(status_code=404, detail="Sheet not found")
+        raise HTTPException(status_code=404, detail="Table not found")
 
-    return HTMLResponse(content=html_page(sheet, page=page), status_code=200)
+    return HTMLResponse(content=html_page(table, page=page), status_code=200)
 
 
 @app.get("/about", response_class=HTMLResponse)
 def about():
-    return RedirectResponse(url=f"/sheets/about")
+    return RedirectResponse(url=f"/tables/about")
 
 
 @app.get("/downloads/{uid}")
-def download_sheet(uid: str, file_type: str = "csv"):
+def download_table(uid: str, file_type: str = "csv"):
     if file_type != "csv":
         raise HTTPException(status_code=404, detail="File type not supported")
 
     try:
-        sheet = Sheet.load(uid)
+        table = Table.load(uid)
     except KeyError:
-        raise HTTPException(status_code=404, detail="Sheet not found")
+        raise HTTPException(status_code=404, detail="Table not found")
 
-    filename_without_ext = "_".join([str(s) for s in sheet.lineage])
+    filename_without_ext = "_".join([str(s) for s in table.lineage])
     filename = (filename_without_ext or "download") or ".csv"
 
     return StreamingResponse(
-        sheet.iter_csv(),
+        table.iter_csv(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

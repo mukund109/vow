@@ -14,9 +14,9 @@ document.addEventListener('alpine:init', () => {
   function sendPostRequest(data) {
 
     // strip out '/' from the url
-    let curr_sheet_id = window.location.pathname.split('/')[2];
+    let curr_table_id = window.location.pathname.split('/')[2];
 
-    return fetch(`/sheets/${curr_sheet_id}`, {
+    return fetch(`/tables/${curr_table_id}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: {
@@ -25,9 +25,9 @@ document.addEventListener('alpine:init', () => {
     })
   }
 
-  function openSheet(sheet_id) {
-    // opens new url corresponding to given sheet_id
-    window.location.href = new URL(`sheets/${sheet_id}`, window.location.origin)
+  function openTable(table_id) {
+    // opens new url corresponding to given table_id
+    window.location.href = new URL(`tables/${table_id}`, window.location.origin)
   }
 
   function openNextPage() {
@@ -40,7 +40,7 @@ document.addEventListener('alpine:init', () => {
     activeRowOffset: -1,
   })
 
-  Alpine.data('sheet_parent', () => ({
+  Alpine.data('table_parent', () => ({
     loading: false,
     filter_vals: {}, // contains { column_index: [val1, val2], ... }
     key_cols: [], // contains indices
@@ -51,7 +51,7 @@ document.addEventListener('alpine:init', () => {
     },
 
   }))
-  Alpine.bind('sheet_parent_bind', () => ({
+  Alpine.bind('table_parent_bind', () => ({
     ':class'() {
       // when loading, makes table grey
       return this.loading ? 'loading-table' : ''
@@ -65,7 +65,7 @@ document.addEventListener('alpine:init', () => {
     }
   }))
 
-  Alpine.data('sheet', (num_rows, num_cols, parent_sheet_id, wrapped_col_indices) => ({
+  Alpine.data('table', (num_rows, num_cols, parent_table_id, wrapped_col_indices) => ({
     rowidx: 0,
     colidx: 0,
     hidden_cols: new Set(), // contains indices of hidden columns
@@ -134,9 +134,9 @@ document.addEventListener('alpine:init', () => {
         else {
           response.json().then(body => {
             console.log(body);
-            if (body.new_sheet != undefined) {
+            if (body.new_table != undefined) {
               this.loading = false
-              openSheet(body.new_sheet)
+              openTable(body.new_table)
             }
           });
         }
@@ -364,7 +364,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     goback() {
-      // openSheet(parent_sheet_id)
+      // openTable(parent_table_id)
       history.back()
     },
 
@@ -437,7 +437,7 @@ document.addEventListener('alpine:init', () => {
     }
   });
 
-  Alpine.bind('base_sheet', () => ({
+  Alpine.bind('base_table', () => ({
     ...base_bindings(),
 
     '@keydown.enter.window'() {
@@ -458,7 +458,7 @@ document.addEventListener('alpine:init', () => {
     }
   }
 
-  Alpine.bind('freq_sheet', (key_cols) => ({
+  Alpine.bind('freq_table', (key_cols) => ({
     ...base_bindings(),
 
     '@keydown.enter.window'() {

@@ -1,22 +1,22 @@
 from typing import List, Tuple
 from yattag.doc import Doc
-from sheet import Sheet, FreqSheet, SheetOfSheets
-from sheet import MarkdownSheet
+from table import Table, FreqTable, TableOfTables
+from table import MarkdownTable
 from markdown2 import markdown
 
 
-def html_lineage(s: Sheet):
+def html_lineage(s: Table):
     doc, tag, text = Doc().tagtext()
-    with tag("ul", id="parent-sheets", klass="column col-9 breadcrumb"):
+    with tag("ul", id="parent-tables", klass="column col-9 breadcrumb"):
         if len(s.lineage) > 1:
             for parent in s.lineage:
                 with tag("li", klass="breadcrumb-item"):
                     id_ = parent.name or parent.uid
-                    doc.line("a", str(parent), href=f"/sheets/{id_}")
+                    doc.line("a", str(parent), href=f"/tables/{id_}")
     return doc.getvalue()
 
 
-def html_navbar(s: Sheet):
+def html_navbar(s: Table):
     doc, tag, text = Doc().tagtext()
     with tag("div", style="padding: 0.6rem", klass="column col-2 col-ml-auto"):
         with tag("span", klass="navbar-links"):
@@ -26,13 +26,13 @@ def html_navbar(s: Sheet):
     return doc.getvalue()
 
 
-def html_hints(s: Sheet):
+def html_hints(s: Table):
     doc, tag, text = Doc().tagtext()
     with tag(
         "div", ("x-bind", "hints_sidebar"), id="hints", style="display: none;"
     ):
-        if isinstance(s, FreqSheet) or isinstance(s, SheetOfSheets):
-            hint_text = "Facet" if isinstance(s, FreqSheet) else "Open Sheet"
+        if isinstance(s, FreqTable) or isinstance(s, TableOfTables):
+            hint_text = "Facet" if isinstance(s, FreqTable) else "Open Table"
             with tag(
                 "button",
                 ("x-bind", "open_hint"),
@@ -61,7 +61,7 @@ def html_hints(s: Sheet):
     return doc.getvalue()
 
 
-def html_header_row(s: Sheet):
+def html_header_row(s: Table):
     doc, tag, text = Doc().tagtext()
     with tag("tr", ("x-ref", "header")):
         for idx, col in enumerate(s.columns):
@@ -78,7 +78,7 @@ def html_header_row(s: Sheet):
     return doc.getvalue()
 
 
-def html_search_row(s: Sheet):
+def html_search_row(s: Table):
     doc, tag, text = Doc().tagtext()
     with tag("tr", ("x-bind", "search_row()"), style="display: none;"):
         for idx, _ in enumerate(s.columns):
@@ -109,7 +109,7 @@ def html_search_row(s: Sheet):
     return doc.getvalue()
 
 
-def html_rows(s: Sheet, rows: List[Tuple[str]]):
+def html_rows(s: Table, rows: List[Tuple[str]]):
     doc, tag, text = Doc().tagtext()
     for i, row in enumerate(rows):
         with tag(
@@ -128,7 +128,7 @@ def html_rows(s: Sheet, rows: List[Tuple[str]]):
                 elif is_float:
                     display_val = f"{row[j]:.2f}"
 
-                klass = "markdown-cell" if isinstance(s, MarkdownSheet) else ""
+                klass = "markdown-cell" if isinstance(s, MarkdownTable) else ""
 
                 # TODO: refactor: None and empty string have the same
                 # data-val attribute.
@@ -145,7 +145,7 @@ def html_rows(s: Sheet, rows: List[Tuple[str]]):
                     doc.add_class("percentage" if is_percent else "")
                     if is_percent:
                         doc.attr(style=f"background-size: {display_val}% 100%")
-                    if isinstance(s, MarkdownSheet):
+                    if isinstance(s, MarkdownTable):
                         doc.asis(markdown(display_val))
                     else:
                         text(display_val)
@@ -156,7 +156,7 @@ def html_rows(s: Sheet, rows: List[Tuple[str]]):
 _MAX_NUM_ROWS = 25
 
 
-def html_table(s: Sheet, page: int):
+def html_table(s: Table, page: int):
 
     rows, _ = s[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
     doc, tag, text = Doc().tagtext()
@@ -171,14 +171,14 @@ def html_table(s: Sheet, page: int):
         doc.attr(
             (
                 "x-data",
-                f"sheet({len(rows)}, {num_cols}, '{parent_uid}', {s.wrapped_col_indices})",
+                f"table({len(rows)}, {num_cols}, '{parent_uid}', {s.wrapped_col_indices})",
             )
         )
-        if isinstance(s, FreqSheet):
-            doc.attr(("x-bind", f"freq_sheet({s.key_col_indices})"))
+        if isinstance(s, FreqTable):
+            doc.attr(("x-bind", f"freq_table({s.key_col_indices})"))
             doc.add_class("freq-table")
         else:
-            doc.attr(("x-bind", "base_sheet()"))
+            doc.attr(("x-bind", "base_table()"))
             doc.add_class("basic-table")
         doc.asis(html_header_row(s))
         doc.asis(html_search_row(s))
@@ -186,7 +186,7 @@ def html_table(s: Sheet, page: int):
     return doc.getvalue()
 
 
-def html_footer(s: Sheet, page: int = 0):
+def html_footer(s: Table, page: int = 0):
     doc, tag, text = Doc().tagtext()
     with tag("div", "x-cloak", id="table-footer"):
         doc.line("b", str(len(s)))
@@ -200,7 +200,7 @@ def html_footer(s: Sheet, page: int = 0):
                         "a",
                         "prev",
                         id="previous-page",
-                        href=f"/sheets/{s.uid}?page={page - 1}",
+                        href=f"/tables/{s.uid}?page={page - 1}",
                     )
                 else:
                     text("prev")
@@ -213,7 +213,7 @@ def html_footer(s: Sheet, page: int = 0):
                         "a",
                         "next",
                         id="next-page",
-                        href=f"/sheets/{s.uid}?page={page + 1}",
+                        href=f"/tables/{s.uid}?page={page + 1}",
                     )
                 else:
                     text("next")
@@ -231,12 +231,12 @@ def html_right_cheatsheet():
     return doc.getvalue()
 
 
-def html_sheet(s: Sheet, page):
+def html_table_parent(s: Table, page):
     doc, tag, text = Doc().tagtext()
     with tag(
         "div",
-        ("x-data", "sheet_parent()"),
-        ("x-bind", "sheet_parent_bind()"),
+        ("x-data", "table_parent()"),
+        ("x-bind", "table_parent_bind()"),
         id="table-parent",
     ):
         with tag("div", klass="container"):
@@ -265,7 +265,7 @@ def html_sheet(s: Sheet, page):
     return doc.getvalue()
 
 
-def html_page(s: Sheet, page: int):
+def html_page(s: Table, page: int):
     doc = Doc()
     doc.asis("<!DOCTYPE html>")
     with doc.tag("html", lang="en"):
@@ -314,6 +314,6 @@ def html_page(s: Sheet, page: int):
         doc.line("script", "", "defer", src="/static/cdn.min.js")
         doc.stag("link", rel="stylesheet", href="/static/style.css")
         with doc.tag("body"):
-            doc.asis(html_sheet(s, page))
+            doc.asis(html_table_parent(s, page))
 
     return doc.getvalue()

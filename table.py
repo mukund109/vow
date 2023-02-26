@@ -81,7 +81,7 @@ class Store:
         )
 
 
-sheet_store = Store()
+table_store = Store()
 
 
 class FreqOperation(BaseModel):
@@ -235,10 +235,10 @@ def _execute_query_csv_stream(
 
 
 @dataclass(kw_only=True, eq=False)
-class Sheet:
+class Table:
     uid: str = field(init=False)
     view: QueryBuilder
-    source: Optional["Sheet"] = field(repr=False)
+    source: Optional["Table"] = field(repr=False)
     query_params: List[str] = field(default_factory=list)
     name: Optional[str] = None
     desc: Optional[str] = None
@@ -277,12 +277,12 @@ class Sheet:
             query_params=self.query_params,
         )
         self.columns = [ct[0] for ct in columns_types]
-        # TODO: refactor: don't do IO in sheet constructor
+        # TODO: refactor: don't do IO in table constructor
         self.persist()
 
     def _persist(self, key):
         if self.dbtype == "memory":
-            sheet_store.put_in_memory(key, self)
+            table_store.put_in_memory(key, self)
 
         data = asdict(self)
 
@@ -295,7 +295,7 @@ class Sheet:
         data.pop("source")
         data["source_uid"] = self.source.uid if self.source else None
         record = {"class": self.__class__.__name__, "data": data}
-        sheet_store.put(key, pickle.dumps(record))
+        table_store.put(key, pickle.dumps(record))
 
     def persist(self):
         self._persist(key=self.uid)
@@ -303,15 +303,15 @@ class Sheet:
             self._persist(key=self.name)
 
     @classmethod
-    def load(cls, uid: str) -> "Sheet":
-        obj = sheet_store.get(uid)
-        if isinstance(obj, Sheet):
+    def load(cls, uid: str) -> "Table":
+        obj = table_store.get(uid)
+        if isinstance(obj, Table):
             return obj
-        record = pickle.loads(sheet_store.get(uid))
+        record = pickle.loads(table_store.get(uid))
         class_ = globals()[record["class"]]
         data = record["data"]
         source_uid = data.pop("source_uid")
-        source = None if source_uid is None else Sheet.load(source_uid)
+        source = None if source_uid is None else Table.load(source_uid)
         data["source"] = source
         return class_(**data)
 
@@ -358,18 +358,18 @@ class Sheet:
         return hash(self.uid)
 
     @property
-    def lineage(self) -> List["Sheet"]:
+    def lineage(self) -> List["Table"]:
         """
-        List of parent sheets + this sheet
+        List of parent table + this table
         """
         if self.source is None:
             return [self]
         return self.source.lineage + [self]
 
     @property
-    def parent(self) -> Optional["Sheet"]:
+    def parent(self) -> Optional["Table"]:
         """
-        Returns parent sheet if it exists otherwise returns self
+        Returns parent table if it exists otherwise returns self
         """
         lineage = self.lineage
         if len(lineage) <= 1:
@@ -391,7 +391,7 @@ class Sheet:
                 return d
         return "unk"
 
-    def frequency(self, cols: List[str]) -> "FreqSheet":
+    def frequency(self, cols: List[str]) -> "FreqTable":
         # can check if column name is in self.columns
         res = (
             Query.from_(self.view)
@@ -419,12 +419,12 @@ class Sheet:
             )
             .orderby("num_rows", order=Order.desc)
         )
-        return FreqSheet(view=res, key_cols=cols, source=self, desc="freq")
+        return FreqTable(view=res, key_cols=cols, source=self, desc="freq")
 
-    def sort(self, col_name: str, ascending: bool = True) -> "Sheet":
+    def sort(self, col_name: str, ascending: bool = True) -> "Table":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        return Sheet(
+        return Table(
             view=res,
             source=self.source,
             desc=self.desc,
@@ -455,10 +455,10 @@ class Sheet:
         self,
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
-    ) -> "Sheet":
+    ) -> "Table":
         qry = self._filter_exact(self.view, filters, cols_to_return)
 
-        return Sheet(view=qry, source=self, desc="fil")
+        return Table(view=qry, source=self, desc="fil")
 
     def _filter_except(
         self,
@@ -484,12 +484,12 @@ class Sheet:
         self,
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
-    ) -> "Sheet":
+    ) -> "Table":
         """
         if cols_to_return is None, then return all columns
         """
         res = self._filter_except(self.view, filters, cols_to_return)
-        return Sheet(view=res, source=self, desc="fil2")
+        return Table(view=res, source=self, desc="fil2")
 
     def _filter_regex(
         self,
@@ -511,9 +511,9 @@ class Sheet:
 
     def filter_regex(
         self, column: str, regex: str, cols_to_return: Optional[List[str]]
-    ) -> "Sheet":
+    ) -> "Table":
         qry = self._filter_regex(self.view, column, regex, cols_to_return)
-        return Sheet(
+        return Table(
             view=qry, source=self, query_params=[regex], desc="search"
         )
 
@@ -549,11 +549,11 @@ class Sheet:
         res = (
             Query.from_(self.view).groupby(*key_cols).select(*key_cols, *cases)
         )
-        return Sheet(view=res, source=self, desc="piv")
+        return Table(view=res, source=self, desc="piv")
 
     @property
     def typ(self):
-        if type(self) == FreqSheet:
+        if type(self) == FreqTable:
             return "freq"
         else:
             return "base"
@@ -561,7 +561,7 @@ class Sheet:
     def run_op(
         self,
         operation: OperationsType,
-    ) -> "Sheet":
+    ) -> "Table":
 
         if isinstance(operation, FreqOperation):
             return self.frequency(operation.cols)
@@ -621,7 +621,7 @@ class Sheet:
 
 
 @dataclass(kw_only=True, eq=False)
-class FreqSheet(Sheet):
+class FreqTable(Table):
     key_cols: List[str]
 
     def __post_init__(self):
@@ -645,29 +645,29 @@ class FreqSheet(Sheet):
 
     def facet_search(
         self, filters: List[Tuple[str, Optional[str]]]
-    ) -> "Sheet":
+    ) -> "Table":
         """
         A facet search is just the behaviour that happens
-        when you press 'Enter' on a row (facet) of a frequency sheet
+        when you press 'Enter' on a row (facet) of a frequency table
         """
         if self.source is None:
-            raise ValueError("source cannot be None for freq sheet")
+            raise ValueError("source cannot be None for freq table")
         return self.source.filter_exact(filters, cols_to_return=None)
 
     def filter_exact(
         self,
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
-    ) -> "Sheet":
+    ) -> "Table":
         """
-        If a filter op is performed on a FreqSheet, it returns another
-        FreqSheet with the same `source` and `key_cols`
+        If a filter op is performed on a FreqTable, it returns another
+        FreqTable with the same `source` and `key_cols`
         """
 
         if cols_to_return is not None:
             self.check_for_key_cols(cols_to_return)
         res = self._filter_exact(self.view, filters, cols_to_return)
-        return FreqSheet(
+        return FreqTable(
             view=res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
@@ -675,23 +675,23 @@ class FreqSheet(Sheet):
         self,
         filters: List[Tuple[str, Optional[str]]],
         cols_to_return: Optional[List[str]],
-    ) -> "Sheet":
+    ) -> "Table":
         """
-        same as docs of `FreqSheet.filter_exact`
+        same as docs of `FreqTable.filter_exact`
         """
 
         if cols_to_return is not None:
             self.check_for_key_cols(cols_to_return)
         res = self._filter_except(self.view, filters, cols_to_return)
-        return FreqSheet(
+        return FreqTable(
             view=res, key_cols=self.key_cols, source=self.source, desc="ffil"
         )
 
     def filter_regex(
         self, column: str, regex: str, *args, **kwargs
-    ) -> "FreqSheet":
+    ) -> "FreqTable":
         res = self._filter_regex(self.view, column, regex, *args, **kwargs)
-        return FreqSheet(
+        return FreqTable(
             view=res,
             key_cols=self.key_cols,
             source=self.source,
@@ -699,10 +699,10 @@ class FreqSheet(Sheet):
             desc="fsearch",
         )
 
-    def sort(self, col_name: str, ascending: bool = True) -> "FreqSheet":
+    def sort(self, col_name: str, ascending: bool = True) -> "FreqTable":
         order = Order.asc if ascending else Order.desc
         res = Query.from_(self.view).orderby(col_name, order=order).select("*")
-        return FreqSheet(
+        return FreqTable(
             view=res,
             key_cols=self.key_cols,
             source=self.source,
@@ -716,7 +716,7 @@ class FreqSheet(Sheet):
     def run_op(
         self,
         operation: OperationsType,
-    ) -> "Sheet":
+    ) -> "Table":
         if isinstance(operation, FacetOperation):
             return self.facet_search(operation.facets)
 
@@ -732,7 +732,7 @@ def _rows_to_sql_str(rows: List):
 
 
 @dataclass(kw_only=True, eq=False)
-class MemorySheet(Sheet):
+class MemoryTable(Table):
     columns: List[str] = field(hash=False)
     rows: List = field(hash=False)
 
@@ -760,14 +760,14 @@ class MemorySheet(Sheet):
 
 
 @dataclass(kw_only=True, eq=False)
-class SheetOfSheets(MemorySheet):
+class TableOfTables(MemoryTable):
     table_names: List[str]
 
-    def run_op(self, operation: OperationsType) -> "Sheet":
+    def run_op(self, operation: OperationsType) -> "Table":
 
         if isinstance(operation, OpenOperation):
             table_name = self.table_names[operation.rowid]
-            return Sheet(
+            return Table(
                 view=Query.from_(table_name).select("*"),
                 source=self,
                 name=table_name,
@@ -777,7 +777,7 @@ class SheetOfSheets(MemorySheet):
         return super().run_op(operation)
 
 
-class MarkdownSheet(MemorySheet):
+class MarkdownTable(MemoryTable):
     @classmethod
     def from_markdown_str(cls, name: str, text: str) -> Self:
         return cls.from_records(
@@ -786,7 +786,7 @@ class MarkdownSheet(MemorySheet):
 
 
 demo_datasets = load_demo_datasets()
-main_sheet = SheetOfSheets.from_records(
+main_table = TableOfTables.from_records(
     name="main",
     columns=["name", "details", "date"],
     rows=[
@@ -797,13 +797,13 @@ main_sheet = SheetOfSheets.from_records(
     wrapped_col_indices=[1],
 )
 
-about_sheet = MarkdownSheet.from_markdown_str(
+about_table = MarkdownTable.from_markdown_str(
     name="about",
     text="""Tablehub is a tool for sharing and exploring tables
 
 #### Note for Vimium users
 
-You will need to disable **Vimium** for [Tablehub.io](/sheets/about) if you want to make use of the keybindings implemented here.
+You will need to disable **Vimium** for [Tablehub.io](/tables/about) if you want to make use of the keybindings implemented here.
 
 Navigation experience for you will be slower since vimium disables browsers' backward-forward cache. The only way to get around this is to delete/disable the Vimium plugin entirely.
     """,
