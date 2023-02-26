@@ -385,10 +385,11 @@ class Sheet:
         match (self.source, self.name, self.desc):
             case (None, None, None):
                 return "unk"
-            case (_, n, None):
+            case (_, str(n), None):
                 return n
-            case (_, _, d):
+            case (_, _, str(d)):
                 return d
+        return "unk"
 
     def frequency(self, cols: List[str]) -> "FreqSheet":
         # can check if column name is in self.columns
