@@ -1,6 +1,6 @@
 from typing import Any, List, Tuple
 from yattag.doc import Doc
-from table import Table, FreqTable, TableOfTables
+from table import ColType, Table, FreqTable, TableOfTables
 from table import MarkdownTable
 from markdown2 import markdown
 
@@ -73,6 +73,8 @@ def html_header_row(s: Table) -> str:
                 doc.attr(("x-bind", f"col({idx})"))
                 doc.attr(("data-colname", column_name))
                 doc.text(column_name)
+                if column.type == ColType.INTEGER:
+                    doc.line("em", " int", style="color: mediumpurple")
                 if is_sorted:
                     sort_sign = "↑" if s.orderbys[column_name] else "↓"
                     doc.line("span", sort_sign, klass="arrow")
