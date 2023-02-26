@@ -309,7 +309,7 @@ class Table:
         self.columns = _get_schema_for_view(
             self.get_db_connection(),
             self.view,
-            query_params=self.query_params,
+            query_params=self.all_query_params(),
         )
         # TODO: refactor: don't do IO in table constructor
         self.persist()
