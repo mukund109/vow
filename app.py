@@ -33,7 +33,7 @@ def post_view(
 
     new_table = prev_table.run_op(operation)
 
-    return {"new_table": new_table.uid, "yolo": "Success"}
+    return {"new_table": new_table.name or new_table.uid, "yolo": "Success"}
 
 
 @app.get("/tables/{uid}")
