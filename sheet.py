@@ -780,7 +780,7 @@ class MarkdownSheet(MemorySheet):
     @classmethod
     def from_markdown_str(cls, name: str, text: str) -> Self:
         return cls.from_records(
-            name=name, columns=["markdown"], rows=[(text,)]
+            name=name, columns=["md"], rows=[(text,)]
         )
 
 
