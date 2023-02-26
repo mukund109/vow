@@ -829,6 +829,46 @@ about_table = MarkdownTable.from_markdown_str(
     name="about",
     text="""Tablehub is a tool for sharing and exploring tables
 
+The UX is heavily inspired by the amazing terminal-tool [Visidata](https://www.visidata.org)
+
+#### Keybindings
+
+The keybindings are likely to change to mantain parity with Visidata
+
+##### Navigation
+- `j` `k` `l` `h` for scrolling
+- `ArrowDown` `ArrowUp` `ArrowRight` `ArrowLeft` for scrolling
+- `N`: Open next set of paginated rows
+- `P`: Open previous set of paginated rows
+- `v`: adjust column width
+- `q`: go to last table (browser back button)
+- `p`: go to next table (browser forward button)
+- `G`: Jump to last row
+- `g`: Jump to top row
+
+##### Frequency
+
+- `!` Toggle key column
+- `F` Frequency of current column
+- `f` Frequency of key columns
+
+##### Filtering
+- `,` Filter by value in current cell
+- `-` Hide/Unhide columns
+- `"` Materialize filters
+
+##### Search
+- `|` Search by regex on active column
+
+##### Sorting
+- `[` Sort ascending
+- `]` Sort descending
+
+##### Aggregation
+- `+` Toggle aggregate column
+- `W` Pivot on current column (needs one key and one aggregate column)
+
+
 #### Note for Vimium users
 
 You will need to disable **Vimium** for [Tablehub.io](/tables/about) if you want to make use of the keybindings implemented here.

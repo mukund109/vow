@@ -7,7 +7,9 @@ from markdown2 import markdown
 
 def html_lineage(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
-    with tag("ul", id="parent-tables", klass="column col-9 breadcrumb"):
+    with tag(
+        "ul", id="parent-tables", klass="column col-8 hide-xs breadcrumb"
+    ):
         if len(s.lineage) > 1:
             for parent in s.lineage:
                 with tag("li", klass="breadcrumb-item"):
@@ -18,11 +20,16 @@ def html_lineage(s: Table) -> str:
 
 def html_navbar(s: Table) -> str:
     doc, tag, text = Doc().tagtext()
-    with tag("div", style="padding: 0.6rem", klass="column col-2 col-ml-auto"):
-        with tag("span", klass="navbar-links"):
-            doc.line("a", "Download", href=f"/downloads/{s.uid}/")
-        with tag("span", klass="navbar-links"):
-            doc.line("a", "About", href="/about/")
+    with tag(
+        "div",
+        style="padding: 0.6rem",
+        klass="column col-2 col-xl-4 col-xs-auto",
+    ):
+        with tag("div", style="float: right"):
+            with tag("span", klass="navbar-links"):
+                doc.line("a", "Download (CSV)", href=f"/downloads/{s.uid}/")
+            with tag("span", klass="navbar-links"):
+                doc.line("a", "About", href="/about/")
     return doc.getvalue()
 
 
@@ -265,18 +272,31 @@ def html_table_parent(s: Table, page) -> str:
                 )
                 doc.asis(html_lineage(s))
                 doc.asis(html_navbar(s))
-                doc.line("div", "", klass="column col-1")
+                doc.line("div", "", klass="column col-1 hide-xl")
 
             with tag("div", klass="columns col-gapless"):
                 with tag("div", klass="column col-1 hide-xl"):
                     doc.asis(html_hints(s))
 
-                with tag("div", klass="column col-10"):
-                    doc.asis(html_table(s, page=page))
-                    doc.asis(html_footer(s, page=page))
+                with tag("div", klass="column col-10 col-xl-12"):
+                    if isinstance(s, MarkdownTable):
+                        doc.asis(html_markdown(s))
+                    else:
+                        doc.asis(html_table(s, page=page))
+                        doc.asis(html_footer(s, page=page))
 
                 with tag("div", klass="column col-1 hide-xl", id="cheatsheet"):
                     doc.asis(html_right_cheatsheet())
+
+    return doc.getvalue()
+
+
+def html_markdown(s: MarkdownTable) -> str:
+    doc, tag, text = Doc().tagtext()
+    with tag("div"):
+        rows, _ = s[0:1]
+        print(rows)
+        doc.asis(markdown(rows[0][0]))
 
     return doc.getvalue()
 
