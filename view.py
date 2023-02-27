@@ -297,7 +297,6 @@ def html_markdown(s: MarkdownTable) -> str:
     doc, tag, text = Doc().tagtext()
     with tag("div"):
         rows, _ = s[0:1]
-        print(rows)
         doc.asis(markdown(rows[0][0]))
 
     return doc.getvalue()

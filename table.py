@@ -562,7 +562,6 @@ class Table:
             self.get_db_connection(), temp[: col_limit + 1]
         )
         assert len(cols) == 1
-        print(len(rows), rows)
         if len(rows) > col_limit:
             raise HTTPException(
                 status_code=400,
