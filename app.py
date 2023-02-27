@@ -43,7 +43,11 @@ def table_by_uid(uid: str, page: NonNegativeInt = 0):
     except KeyError:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    return HTMLResponse(content=html_page(table, page=page), status_code=200)
+    return HTMLResponse(
+        content=html_page(table, page=page),
+        status_code=200,
+        headers={"Cache-Control": "max-age=5000"},
+    )
 
 
 @app.get("/about", response_class=HTMLResponse)
