@@ -46,7 +46,7 @@ DBType = Literal["memory", "disk"]
 
 class ColType(StrEnum):
     INT = "INT"
-    STR = "STR"
+    STRING = "STRING"
     BOOL = "BOOL"
     FLOAT = "FLOAT"
     DATE = "DATE"
@@ -73,8 +73,8 @@ duckdbtype_to_coltype = {
     "FLOAT": "FLOAT",
     "TIME": "DATETIME",
     "TIMESTAMP": "DATETIME",
-    "UUID": "STR",
-    "VARCHAR": "STR",
+    "UUID": "STRING",
+    "VARCHAR": "STRING",
 }
 
 
