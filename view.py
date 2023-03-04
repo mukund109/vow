@@ -82,8 +82,10 @@ def html_header_row(s: Table) -> str:
                 doc.attr(("x-bind", f"col({idx})"))
                 doc.attr(("data-colname", column_name))
                 doc.text(column_name)
-                if column.type == ColType.INTEGER:
-                    doc.line("em", " int", style="color: mediumpurple")
+                if column.type == ColType.INT:
+                    doc.line("em", " int", style="color: #75c2ca")
+                elif column.type == ColType.FLOAT:
+                    doc.line("em", " fl", style="color: pink")
                 if is_sorted:
                     sort_sign = "↑" if s.orderbys[column_name] else "↓"
                     doc.line("span", sort_sign, klass="arrow")
@@ -182,7 +184,6 @@ _MAX_NUM_ROWS = 25
 
 
 def html_table(s: Table, page: int) -> str:
-
     rows, _ = s[page * _MAX_NUM_ROWS : (page + 1) * _MAX_NUM_ROWS]
     doc, tag, text = Doc().tagtext()
     with tag(

@@ -43,26 +43,40 @@ def load_demo_datasets():
 
 DBType = Literal["memory", "disk"]
 
+
 class ColType(StrEnum):
-    BIGINT = "BIGINT"
-    BOOLEAN = "BOOLEAN"
-    BLOB = "BLOB"
+    INT = "INT"
+    STR = "STR"
+    BOOL = "BOOL"
+    FLOAT = "FLOAT"
     DATE = "DATE"
-    DOUBLE = "DOUBLE"
-    DECIMAL = "DECIMAL"
-    HUGEINT = "HUGEINT"
-    INTEGER = "INTEGER"
-    REAL = "REAL"
-    SMALLINT = "SMALLINT"
-    TIME = "TIME"
-    TIMESTAMP = "TIMESTAMP"
-    TINYINT = "TINYINT"
-    UBIGINT = "UBIGINT"
-    UINTEGER = "UINTEGER"
-    USMALLINT = "USMALLINT"
-    UTINYINT = "UTINYINT"
-    UUID = "UUID"
-    VARCHAR = "VARCHAR"
+    DATETIME = "DATETIME"
+    OTHER = "OTHER"
+
+
+duckdbtype_to_coltype = {
+    "BIGINT": "INT",
+    "INTEGER": "INT",
+    "TINYINT": "INT",
+    "UBIGINT": "INT",
+    "UINTEGER": "INT",
+    "USMALLINT": "INT",
+    "UTINYINT": "INT",
+    "SMALLINT": "INT",
+    "HUGEINT": "INT",
+    "BOOLEAN": "BOOL",
+    "BLOB": "OTHER",
+    "DATE": "DATE",
+    "DOUBLE": "FLOAT",
+    "DECIMAL": "FLOAT",
+    "REAL": "FLOAT",
+    "FLOAT": "FLOAT",
+    "TIME": "DATETIME",
+    "TIMESTAMP": "DATETIME",
+    "UUID": "STR",
+    "VARCHAR": "STR",
+}
+
 
 def get_conn() -> DuckDBPyConnection:
     conn = duckdb.connect("vow.db", read_only=True)
@@ -147,6 +161,10 @@ class RegexSearchOperation(BaseModel):
     columns_to_return: Optional[List[str]] = None
 
 
+class OpenColumnTable(BaseModel):
+    operation_type: str = "open_column_table"
+
+
 class Operation(BaseModel):
     operation_type: str
     params: str
@@ -160,9 +178,11 @@ OperationsType = Union[
     OpenOperation,
     FilterOperation,
     FreqOperation,
+    OpenColumnTable,
 ]
 
 regexp_matches = CustomFunction("regexp_matches", ["string", "regex"])
+
 
 @dataclass(frozen=True)
 class Column:
@@ -175,7 +195,6 @@ def _get_schema_for_view(
     view: QueryBuilder,
     query_params: Optional[List[str]] = None,
 ) -> List[Column]:
-
     sql_query = f"DESCRIBE {view.get_sql()}"
 
     if query_params is None:
@@ -195,7 +214,10 @@ def _get_schema_for_view(
         else:
             raise e
 
-    schema: List[Column] = [Column(row[0], row[1]) for row in rows]
+    schema: List[Column] = [
+        Column(name=row[0], type=ColType(duckdbtype_to_coltype[row[1]]))
+        for row in rows
+    ]
     return schema
 
 
@@ -268,6 +290,7 @@ def _execute_query_csv_stream(
             ):
                 break
             raise e
+
 
 @dataclass(kw_only=True, eq=False)
 class Table:
@@ -350,7 +373,6 @@ class Table:
         return class_(**data)
 
     def __len__(self):
-
         view = Query.from_(self.view).select(
             Count("*").as_("num_rows"),
         )
@@ -416,12 +438,12 @@ class Table:
         return self.source.all_query_params() + self.query_params
 
     def __str__(self):
-        match (self.source, self.name, self.desc):
-            case (None, None, None):
+        match(self.source, self.name, self.desc):
+            case(None, None, None):
                 return "unk"
-            case (_, str(n), None):
+            case(_, str(n), None):
                 return n
-            case (_, _, str(d)):
+            case(_, _, str(d)):
                 return d
         return "unk"
 
@@ -584,6 +606,13 @@ class Table:
         )
         return Table(view=res, source=self, desc="piv")
 
+    def open_column_table(self) -> "MemoryTable":
+        name: str = self.name or self.uid
+        name = f"{name}_columns"
+        cols = ["name", "type"]
+        rows = [(c.name, c.type) for c in self.columns]
+        return MemoryTable.from_records(name=name, cols=cols, rows=rows)
+
     @property
     def typ(self):
         if type(self) == FreqTable:
@@ -595,7 +624,6 @@ class Table:
         self,
         operation: OperationsType,
     ) -> "Table":
-
         if isinstance(operation, FreqOperation):
             return self.frequency(operation.cols)
 
@@ -624,6 +652,9 @@ class Table:
                 regex=operation.regex,
                 cols_to_return=operation.columns_to_return,
             )
+
+        if isinstance(operation, OpenColumnTable):
+            return self.open_column_table()
 
         if isinstance(operation, Operation):
             op = operation.operation_type
@@ -765,10 +796,14 @@ class MemoryTable(Table):
 
     @classmethod
     def from_records(cls, name: str, cols: List[str], rows: List, **kwargs):
+        """
+        The name should be unique
+        If a table with same name is created again, it overwrites the previous
+        """
         conn = get_in_memory_conn()
         col_str = ", ".join([f"{col} VARCHAR" for col in cols])
         # insert rows into db
-        conn.execute(f"CREATE TABLE {name} ({col_str});")
+        conn.execute(f"CREATE OR REPLACE TABLE {name} ({col_str});")
         num_cols = len(cols)
         conn.executemany(
             f"INSERT INTO {name} VALUES ({','.join(['?'] * num_cols)});", rows
@@ -791,7 +826,6 @@ class TableOfTables(MemoryTable):
     table_names: List[str]
 
     def run_op(self, operation: OperationsType) -> "Table":
-
         if isinstance(operation, OpenOperation):
             table_name = self.table_names[operation.rowid]
             return Table(
@@ -807,9 +841,7 @@ class TableOfTables(MemoryTable):
 class MarkdownTable(MemoryTable):
     @classmethod
     def from_markdown_str(cls, name: str, text: str) -> Self:
-        return cls.from_records(
-            name=name, cols=["md"], rows=[(text,)]
-        )
+        return cls.from_records(name=name, cols=["md"], rows=[(text,)])
 
 
 demo_datasets = load_demo_datasets()

@@ -1,3 +1,9 @@
+## super-cool features
+* graph suggestions - select one or more columns and get suggestions for what graphs are possible
+* columns sheet shows graphs, with info about each individual column
+* contextual command palette - command palette that shows suggestion depending on state of the sheet. E.g. searching "hide" on an active column can help hide that column
+* live search
+
 where was i
 * download button causing CPU usage to skyrocket
 * add more buttons (regex search 2 buttons - enter and escape)
@@ -129,6 +135,7 @@ This is a complex issue
 There are also in-memory tables created at the start of the application. Should they be persisted? No
 Its ok if the master and about table cannot be re-created from storage
 Only need to make sure that the uid for these tables is mapped to their in-memory objects for lookup
+WHAT ABOUT COLUMN TABLES????
 
 For now, doing the following:
 Persist all table attributes, including visual ones

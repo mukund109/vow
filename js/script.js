@@ -201,6 +201,10 @@ document.addEventListener('alpine:init', () => {
       this.performOp(type, { 'params': col_name })
     },
 
+    performOpenColTableOp() {
+      this.performOp("open_column_table", {})
+    },
+
     performRegexSearchOp() {
       const cols_to_return = this.get_visible_col_names()
       const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
@@ -417,6 +421,7 @@ document.addEventListener('alpine:init', () => {
         'W': () => { this.performPivotOp() },
         'N': openNextPage,
         'P': openPrevPage,
+        'C': () => { this.performOpenColTableOp() },
       }
       const key_map = {
         'g': () => { this.update_rowid_to_min() },
