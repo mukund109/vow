@@ -333,19 +333,6 @@ def html_page(s: Table, page: int) -> str:
         doc.stag(
             "link", rel="stylesheet", href="/static/spectre-icons.min.css"
         )
-        doc.stag("link", rel="preconnect", href="https://fonts.googleapis.com")
-        doc.stag(
-            "link",
-            "crossorigin",
-            rel="preconnect",
-            href="https://fonts.gstatic.com",
-        )
-
-        doc.stag(
-            "link",
-            rel="stylesheet",
-            href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;500&family=Roboto:wght@100;400&display=swap",
-        )
 
         doc.line("script", "", "defer", src="/js/script.js")
         doc.line("script", "", "defer", src="/static/cdn.min.js")
