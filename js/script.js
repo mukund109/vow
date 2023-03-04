@@ -270,10 +270,8 @@ document.addEventListener('alpine:init', () => {
     toggle_hidden_col() {
       if (this.hidden_cols.has(this.colidx)) {
         this.hidden_cols.delete(this.colidx)
-        this.removeClassFromColCells(this.colidx, 'hidden-cell')
       } else {
         this.hidden_cols.add(this.colidx)
-        this.addClassToActiveCol('hidden-cell')
       }
       this.update_colid_to_next_visible()
 
@@ -578,6 +576,7 @@ document.addEventListener('alpine:init', () => {
         // 'selected-cell': (this.rowidx == i) && (this.colidx == j),
         'clipped-cell': this.col_wrapping[j] == 'clip',
         'wrapped-cell': this.col_wrapping[j] == 'wrap',
+        'hidden-cell': this.hidden_cols.has(j),
       }
     },
 
