@@ -1,4 +1,5 @@
 where was i
+* download button causing CPU usage to skyrocket
 * add more buttons (regex search 2 buttons - enter and escape)
 
 add warning for vimium users
@@ -44,7 +45,7 @@ pre-release checklist
 * refactor performOp functions (some take arguments when they should be using self.<attribute>)
 * refactor, communicate with backend using actions rather than operations (e.g. openCell instead of facetOperation)
 
-* [BH] implement Cache-control
+* [BM] think about how to implement caching
 * [B] show useful info like col-types
 * [B] download as parquet
 * [B] col dtypes
@@ -55,7 +56,6 @@ todo
 * BUG: freq of freq - "num_rows" duplicate name
 * low priority: can hidden cols be key cols? shouldn't matter
 * check the column names using https://github.com/duckdb/duckdb/blob/master/examples/python/duckdb-python.py#L76
-* need lazy eval in case someone opens a deeply nested table, all source table queries shouldn't be run
 * links to previous tables
   * list of previous tables should not change on sort
   * browser history can still change
