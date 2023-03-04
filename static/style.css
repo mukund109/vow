@@ -8,6 +8,10 @@ table {
   height: 90vh;
 }
 
+th {
+  font-weight: 450;
+}
+
 tbody {
   overflow-y: auto;
   overflow-x: auto;
@@ -23,6 +27,7 @@ tbody {
 }
 
 .sort-arrow {
+  font-weight: bolder;
   cursor: pointer;
   color: #5e5e5e;
   padding: 3px 3px;
@@ -134,12 +139,12 @@ th.agg-col {
 
 .coltype-float {
   color: #b5973f;
-  font-weight: lighter;
+  font-weight: normal;
 }
 
 .coltype-int {
   color: #c8179c;
-  font-weight: lighter;
+  font-weight: normal;
 }
 
 .basic-table  td.selected-cell {
