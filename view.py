@@ -83,9 +83,9 @@ def html_header_row(s: Table) -> str:
                 doc.attr(("data-colname", column_name))
                 doc.text(column_name)
                 if column.type == ColType.INT:
-                    doc.line("em", " int", style="color: #75c2ca")
+                    doc.line("em", " int", klass="coltype-int")
                 elif column.type == ColType.FLOAT:
-                    doc.line("em", " fl", style="color: pink")
+                    doc.line("em", " fl", klass="coltype-float")
                 if is_sorted:
                     is_asc = s.orderbys[column_name]
                     sort_sign = "↑" if is_asc else "↓"

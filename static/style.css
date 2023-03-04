@@ -125,11 +125,21 @@ td.hidden-cell {
 }
 
 th.key-col {
-  background: #9b86ff;
+  background: #b9aaff;
 }
 
 th.agg-col {
-  background: #ff2b85;
+  background: #ffb2d2;
+}
+
+.coltype-float {
+  color: #b5973f;
+  font-weight: lighter;
+}
+
+.coltype-int {
+  color: #c8179c;
+  font-weight: lighter;
 }
 
 .basic-table  td.selected-cell {
