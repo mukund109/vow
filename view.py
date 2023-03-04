@@ -87,8 +87,19 @@ def html_header_row(s: Table) -> str:
                 elif column.type == ColType.FLOAT:
                     doc.line("em", " fl", style="color: pink")
                 if is_sorted:
-                    sort_sign = "↑" if s.orderbys[column_name] else "↓"
-                    doc.line("span", sort_sign, klass="arrow")
+                    is_asc = s.orderbys[column_name]
+                    sort_sign = "↑" if is_asc else "↓"
+                    bind = "sort_asc" if is_asc else "sort_desc"
+                    doc.line(
+                        "span",
+                        sort_sign,
+                        (
+                            "data-tooltip",
+                            "Sort desc ]\nSort asc [",
+                        ),
+                        ("x-bind", bind),
+                        klass="sort-arrow tooltip tooltip-right",
+                    )
     return doc.getvalue()
 
 

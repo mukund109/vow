@@ -15,6 +15,23 @@ tbody {
 
 .table th {
   background: white;
+  cursor: pointer;
+}
+
+.table th:hover {
+  background: #f5f5f5;
+}
+
+.sort-arrow {
+  /* this element should be right alinged */
+  cursor: pointer;
+  color: #5e5e5e;
+  padding: 3px 3px;
+  margin-left: 8px;
+}
+
+.sort-arrow:hover {
+  background: #ccc;
 }
 
 .basic-table th {

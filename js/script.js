@@ -195,9 +195,12 @@ document.addEventListener('alpine:init', () => {
       this.performOp("open", { 'rowid': this.rowidx });
     },
 
-    performSortOp(type) {
+    performSortOp(type, col_name = null) {
       // type is one of 'sa', 'sd'
-      const col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      if (col_name == null) {
+
+        col_name = this.$refs[`col-${this.colidx}`].getAttribute("data-colname");
+      }
       this.performOp(type, { 'params': col_name })
     },
 
@@ -679,6 +682,22 @@ document.addEventListener('alpine:init', () => {
 
     'x-on:click'() {
       window.dispatchEvent(new KeyboardEvent('keydown', { 'key': '"' }));
+    }
+  }));
+
+  Alpine.bind('sort_asc', () => ({
+
+    'x-on:click'() {
+      const col_name = this.$event.target.parentElement.getAttribute("data-colname")
+      this.performSortOp('sd', col_name)
+    }
+  }));
+
+  Alpine.bind('sort_desc', () => ({
+
+    'x-on:click'() {
+      const col_name = this.$event.target.parentElement.getAttribute("data-colname")
+      this.performSortOp('sa', col_name)
     }
   }));
 });
