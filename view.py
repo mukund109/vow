@@ -26,10 +26,10 @@ def html_navbar(s: Table) -> str:
         klass="column col-2 col-xl-4 col-xs-auto",
     ):
         with tag("div", style="float: right"):
+            # with tag("span", klass="navbar-links"):
+            #     doc.line("a", "Download (CSV)", href=f"/downloads/{s.uid}/")
             with tag("span", klass="navbar-links"):
-                doc.line("a", "Download (CSV)", href=f"/downloads/{s.uid}/")
-            with tag("span", klass="navbar-links"):
-                doc.line("a", "Explore", href=f"/")
+                doc.line("a", "Explore", href="/")
             with tag("span", klass="navbar-links"):
                 doc.line("a", "About", href="/about/")
     return doc.getvalue()
@@ -56,7 +56,7 @@ def html_hints(s: Table) -> str:
             style="display: none;",
             klass="btn btn-sm",
         ):
-            text(f"Filter ")
+            text("Filter ")
             doc.line("span", '"', klass="label")
 
         with tag(
@@ -65,7 +65,7 @@ def html_hints(s: Table) -> str:
             style="display: none;",
             klass="btn btn-sm",
         ):
-            text(f"Histogram ")
+            text("Histogram ")
             doc.line("span", "f", klass="label")
     return doc.getvalue()
 
@@ -124,7 +124,7 @@ def html_search_row(s: Table) -> str:
                     )
                     with tag(
                         "button",
-                        ("x-bind", f"search_close_btn()"),
+                        ("x-bind", "search_close_btn()"),
                         ("data-tooltip", "[Esc]"),
                         klass="close-btn tooltip",
                     ):
