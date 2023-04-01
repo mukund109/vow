@@ -862,6 +862,8 @@ about_table = MarkdownTable.from_markdown_str(
 
 The UX is heavily inspired by the amazing terminal-tool [Visidata](https://www.visidata.org)
 
+<iframe width="640" height="360" src="https://www.loom.com/embed/95c0f00969044ae19280974f9017af26" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe><br>
+
 #### Keybindings
 
 The keybindings are likely to change to mantain parity with Visidata
